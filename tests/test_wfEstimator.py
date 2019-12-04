@@ -21,12 +21,12 @@ class TestWfEsitmator(unittest.TestCase):
         self.modulePath = getModulePath()
         imageFolderPath = os.path.join(self.modulePath, "tests", "testData",
                                        "testImages", "LSST_NE_SN25")
-        intra_image_name = "z11_0.25_intra.txt"
-        extra_image_name = "z11_0.25_extra.txt"
+        intraImageName = "z11_0.25_intra.txt"
+        extraImageName = "z11_0.25_extra.txt"
 
         # Path to image files
-        self.intraImgFile = os.path.join(imageFolderPath, intra_image_name)
-        self.extraImgFile = os.path.join(imageFolderPath, extra_image_name)
+        self.intraImgFile = os.path.join(imageFolderPath, intraImageName)
+        self.extraImgFile = os.path.join(imageFolderPath, extraImageName)
 
         # Field XY position
         self.fieldXY = (1.185, 1.185)
