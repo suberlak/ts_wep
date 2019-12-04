@@ -8,7 +8,7 @@ pipeline {
         // It is recommended by SQUARE team do not add the label to let the
         // sytem decide.
         docker {
-            image 'lsstts/aos:w_2019_38'
+            image 'lsstsqre/centos:7-stack-lsst_distrib-w_2019_48'
             args '-u root'
         }
     }
@@ -20,8 +20,8 @@ pipeline {
     environment {
         // Position of LSST stack directory
         LSST_STACK="/opt/lsst/software/stack"
-        // Pipeline Sims Version
-        SIMS_VERSION="sims_w_2019_38"
+        // Pipeline Version
+        SIMS_VERSION="w_2019_48"
         // XML report path
         XML_REPORT="jenkinsReport/report.xml"
         // Module name used in the pytest coverage analysis
@@ -36,8 +36,8 @@ pipeline {
                 // to install the packages.
                 withEnv(["HOME=${env.WORKSPACE}"]) {
                     sh """
-                        source /opt/rh/devtoolset-6/enable
                         source ${env.LSST_STACK}/loadLSST.bash
+                        conda install -y ipython scikit-image
                         git clone --branch master https://github.com/lsst-dm/phosim_utils.git
                         cd phosim_utils/
                         git checkout c1f2391
@@ -60,7 +60,6 @@ pipeline {
                 // Pytest needs to export the junit report.
                 withEnv(["HOME=${env.WORKSPACE}"]) {
                     sh """
-                        source /opt/rh/devtoolset-6/enable
                         source ${env.LSST_STACK}/loadLSST.bash
                         cd phosim_utils/
                         setup -k -r . -t ${env.SIMS_VERSION}
