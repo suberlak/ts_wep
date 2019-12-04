@@ -1,7 +1,7 @@
 import numpy as np
 import unittest
 
-from lsst.obs.lsst.lsstCamMapper import LsstCamMapper
+from lsst.obs.lsst.phosim import PhosimMapper
 
 from lsst.ts.wep.bsc.WcsSol import WcsSol
 
@@ -11,7 +11,7 @@ class TestWcsSol(unittest.TestCase):
 
     def setUp(self):
 
-        self.wcs = WcsSol()
+        self.wcs = WcsSol(PhosimMapper().camera, True)
 
         self.ra = 1.0
         self.dec = 2.0
@@ -23,16 +23,10 @@ class TestWcsSol(unittest.TestCase):
         detectors = self.wcs.getDetectors()
         self.assertEqual(len(detectors), 201)
 
-    def testSetAndGetCamera(self):
-
-        lsstCam = LsstCamMapper().camera
-        self.wcs.setCamera(lsstCam)
+    def testGetCamera(self):
 
         camera = self.wcs.getCamera()
-        self.assertTrue(isinstance(camera, type(lsstCam)))
-
-        detectors = self.wcs.getDetectors()
-        self.assertEqual(len(detectors), 189)
+        self.assertTrue(isinstance(camera, type(PhosimMapper().camera)))
 
     def testSetObservationMetaData(self):
 
@@ -56,79 +50,55 @@ class TestWcsSol(unittest.TestCase):
         chipName = "R22_S11"
         raByWcs, decByWcs = self.wcs.raDecFromPixelCoords(xPix, yPix, chipName)
 
-        self.assertAlmostEqual(raByWcs, self.ra, places=2)
-        self.assertAlmostEqual(decByWcs, self.dec, places=2)
+        self.assertAlmostEqual(raByWcs, self.ra)
+        self.assertAlmostEqual(decByWcs, self.dec)
 
-    @unittest.skip
     def testRaDecFromPixelCoordsArrayForSingleChip(self):
 
-        xPix = [2032, 2032]
-        yPix = [2000, 2000]
+        xPix = [2036.5, 2036.5]
+        yPix = [2000.5, 2000.5]
         chipName = "R22_S11"
         raByWcs, decByWcs = self.wcs.raDecFromPixelCoords(xPix, yPix, chipName)
 
-        self.assertAlmostEqual(raByWcs[0], self.ra, places=2)
-        self.assertAlmostEqual(decByWcs[0], self.dec, places=2)
+        self.assertEqual(len(raByWcs), len(xPix))
+        self.assertEqual(len(decByWcs), len(yPix))
 
-    @unittest.skip
+        self.assertAlmostEqual(raByWcs[0], self.ra)
+        self.assertAlmostEqual(decByWcs[0], self.dec)
+
     def testRaDecFromPixelCoordsForChipArray(self):
 
-        xPix = np.array([2032, 2032])
-        yPix = np.array([2000, 2000])
+        xPix = [2036.5, 2036.5]
+        yPix = [2000.5, 2000.5]
         chipName = np.array(["R22_S11", "R22_S11"])
         raByWcs, decByWcs = self.wcs.raDecFromPixelCoords(xPix, yPix, chipName)
 
-        self.assertEqual(len(raByWcs), 2)
-        self.assertEqual(len(decByWcs), 2)
+        self.assertEqual(len(raByWcs), len(xPix))
+        self.assertEqual(len(decByWcs), len(yPix))
 
-        self.assertAlmostEqual(raByWcs[0], self.ra, places=2)
-        self.assertAlmostEqual(raByWcs[1], self.ra, places=2)
+        self.assertAlmostEqual(raByWcs[0], self.ra)
+        self.assertAlmostEqual(raByWcs[1], self.ra)
 
-    @unittest.skip
-    def testPixelCoordsFromRaDecWithoutChipName(self):
+    def testPixelCoordsFromRaDecForSingleChip(self):
 
-        xPix, yPix = self.wcs.pixelCoordsFromRaDec(self.ra, self.dec)
+        chipName = "R22_S11"
+        xPix, yPix = self.wcs.pixelCoordsFromRaDec(self.ra, self.dec, chipName)
 
-        self.assertAlmostEqual(xPix, 2032, places=-1)
-        self.assertAlmostEqual(yPix, 1994, places=-1)
+        self.assertAlmostEqual(xPix, 2036.5)
+        self.assertAlmostEqual(yPix, 2000.5)
 
-    @unittest.skip
-    def testPixelCoordsFromRaDecWithChipName(self):
+    def testPixelCoordsFromRaDecArrayForSingleChip(self):
 
-        chipName = "R:2,2 S:1,1"
-        xPix, yPix = self.wcs.pixelCoordsFromRaDec(self.ra, self.dec,
-                                                   chipName=chipName)
+        chipName = "R22_S11"
+        lenOfRaDec = 2
+        xPix, yPix = self.wcs.pixelCoordsFromRaDec(
+            [self.ra]*lenOfRaDec, [self.dec]*lenOfRaDec, chipName)
 
-        self.assertAlmostEqual(xPix, 2032, places=-1)
-        self.assertAlmostEqual(yPix, 1994, places=-1)
+        self.assertEqual(len(xPix), lenOfRaDec)
+        self.assertEqual(len(yPix), lenOfRaDec)
 
-    @unittest.skip
-    def testFocalPlaneCoordsFromRaDecWithZeroRot(self):
-
-        self.wcs.setObsMetaData(0, 0, 0)
-        xInMm, yInMm = self.wcs.focalPlaneCoordsFromRaDec(0, 0)
-
-        self.assertEqual(xInMm, 0.0)
-        self.assertEqual(yInMm, 0.0)
-
-        # 0.2 arcsec = 10 um => 1 um = 0.02 arcsec => 1 mm = 20 arcsec
-        # 1 arcsec = 1/3600 degree
-        xInMm, yInMm = self.wcs.focalPlaneCoordsFromRaDec(20.0/3600, 0)
-
-        self.assertAlmostEqual(xInMm, 1.0, places=3)
-        self.assertAlmostEqual(yInMm, 0.0, places=3)
-
-    @unittest.skip
-    def testFocalPlaneCoordsFromRaDecWithNonZeroRot(self):
-
-        self.wcs.setObsMetaData(0, 0, 45)
-
-        # 0.2 arcsec = 10 um => 1 um = 0.02 arcsec => 1 mm = 20 arcsec
-        # 1 arcsec = 1/3600 degree
-        xInMm, yInMm = self.wcs.focalPlaneCoordsFromRaDec(20.0/3600, 0)
-
-        self.assertAlmostEqual(xInMm, 1/np.sqrt(2), places=3)
-        self.assertAlmostEqual(yInMm, -1/np.sqrt(2), places=3)
+        self.assertAlmostEqual(xPix[0], 2036.5)
+        self.assertAlmostEqual(yPix[0], 2000.5)
 
 
 if __name__ == "__main__":
