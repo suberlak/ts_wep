@@ -110,8 +110,7 @@ class SourceSelector(object):
             The orientation of the telescope in degrees.
         """
 
-        mjd = self.settingFile.getSetting("cameraMJD")
-        self.camera.setObsMetaData(ra, dec, rotSkyPos, mjd=mjd)
+        self.camera.setObsMetaData(ra, dec, rotSkyPos)
 
     def getTargetStar(self, offset=0):
         """Get the target stars by querying the database.
