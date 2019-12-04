@@ -2,6 +2,7 @@ from lsst.ts.wep.Utility import CamType
 from lsst.ts.wep.bsc.LsstCam import LsstCam
 from lsst.ts.wep.bsc.LsstFamCam import LsstFamCam
 from lsst.ts.wep.bsc.ComCam import ComCam
+from lsst.ts.wep.bsc.PhoSimCam import PhoSimCam
 
 
 class CamFactory(object):
@@ -17,7 +18,7 @@ class CamFactory(object):
 
         Returns
         -------
-        LsstCam, LsstFamCam, or ComCam
+        LsstCam, LsstFamCam, ComCam, or PhoSimCam
             Camera object.
 
         Raises
@@ -32,6 +33,8 @@ class CamFactory(object):
             return LsstFamCam()
         elif (camType == CamType.ComCam):
             return ComCam()
+        elif (camType == CamType.PhoSim):
+            return PhoSimCam()
         else:
             raise ValueError("The camera type does not match.")
 

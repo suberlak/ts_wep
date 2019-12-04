@@ -11,7 +11,9 @@ CameraData *-- WcsSol
 CameraData <|-- LsstCam
 CameraData <|-- LsstFamCam
 CameraData <|-- ComCam
+CameraData <|-- PhoSimCam
 CamFactory ..> LsstCam
 CamFactory ..> LsstFamCam
 CamFactory ..> ComCam
+CamFactory ..> PhoSimCam
 @enduml

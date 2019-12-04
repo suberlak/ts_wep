@@ -15,7 +15,7 @@ class TestComCam(unittest.TestCase):
         dec = 30.0   # -90 <= Dec <= 90
         rotSkyPos = 0.0
         self.camera = ComCam()
-        self.camera.setObsMetaData(ra, dec, rotSkyPos, mjd=59580.0)
+        self.camera.setObsMetaData(ra, dec, rotSkyPos)
 
         self.stars = StarData([123, 456, 789], [0.1, 0.2, 0.3],
                               [2.1, 2.2, 2.3], [2.0, 3.0, 4.0],
@@ -27,42 +27,21 @@ class TestComCam(unittest.TestCase):
         wfsCcdList = self.camera.getWfsCcdList()
 
         self.assertEqual(len(wfsCcdList), 9)
-        self.assertTrue("R:2,2 S:1,1" in wfsCcdList)
-        self.assertFalse("R:2,1 S:1,1" in wfsCcdList)
-
-    def testSetWfsCcdList(self):
-
-        wfsCcdList = ["a", "b", "c"]
-        self.camera.setWfsCcdList(wfsCcdList)
-
-        self.assertEqual(self.camera.getWfsCcdList(), wfsCcdList)
+        self.assertTrue("R22_S11" in wfsCcdList)
+        self.assertFalse("R21_S11" in wfsCcdList)
 
     def testGetWfsCorner(self):
 
-        wfsCorner = self.camera.getWfsCorner("R:2,2 S:1,1")
+        wfsCorner = self.camera.getWfsCorner("R22_S11")
 
         self.assertEqual(len(wfsCorner), 2)
-        self.assertRaises(KeyError, self.camera.getWfsCorner, "R:2,1 S:1,1")
-
-    def testSetWfsCorners(self):
-
-        wfsCorners = {"a": 1, "b": 2}
-        self.camera.setWfsCorners(wfsCorners)
-
-        self.assertEqual(self.camera.getWfsCorner("a"), wfsCorners["a"])
+        self.assertRaises(KeyError, self.camera.getWfsCorner, "R21_S11")
 
     def testGetCcdDim(self):
 
-        ccdDim = self.camera.getCcdDim("R:2,2 S:1,1")
+        ccdDim = self.camera.getCcdDim("R22_S11")
 
         self.assertEqual(ccdDim, (4072, 4000))
-
-    def testSetCcdDims(self):
-
-        ccdDims = {"a": (1, 1), "b": (2, 2)}
-        self.camera.setCcdDims(ccdDims)
-
-        self.assertEqual(self.camera.getCcdDim("a"), ccdDims["a"])
 
     def testGetWavefrontSensor(self):
 
@@ -83,7 +62,7 @@ class TestComCam(unittest.TestCase):
 
     def _populatePixelFromRADecl(self):
 
-        self.stars.setDetector("R:2,2 S:1,1")
+        self.stars.setDetector("R22_S11")
         populatedStar = self.camera.populatePixelFromRADecl(self.stars)
 
         return populatedStar

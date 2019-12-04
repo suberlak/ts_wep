@@ -1,29 +1,25 @@
 import unittest
 
-from lsst.ts.wep.bsc.LsstCam import LsstCam
+from lsst.ts.wep.bsc.PhoSimCam import PhoSimCam
 
 
-class TestLsstCam(unittest.TestCase):
-    """Test the LsstCam class."""
+class TestPhoSimCam(unittest.TestCase):
+    """Test the PhoSimCam class."""
 
     def setUp(self):
 
-        self.cam = LsstCam()
+        self.cam = PhoSimCam()
         self.cam.setObsMetaData(0, 0, 0)
 
     def testGetWfsCcdList(self):
 
         wfsList = self.cam.getWfsCcdList()
-
-        # Should be 8 WFS in the final
-        self.assertEqual(len(wfsList), 189)
+        self.assertEqual(len(wfsList), 201)
 
     def testGetWavefrontSensor(self):
 
         wfsData = self.cam.getWavefrontSensor()
-
-        # Should be 8 WFS in the final
-        self.assertEqual(len(wfsData), 189)
+        self.assertEqual(len(wfsData), 201)
 
 
 if __name__ == "__main__":

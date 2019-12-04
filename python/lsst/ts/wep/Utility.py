@@ -77,6 +77,7 @@ class CamType(Enum):
     LsstCam = 1
     LsstFamCam = 2
     ComCam = 3
+    PhoSim = 4
 
 
 class BscDbType(Enum):

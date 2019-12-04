@@ -29,9 +29,6 @@ class WcsSol(object):
         # Flip the x-axis or not
         self._flipX = flipX
 
-        # Detectors
-        self._detectors = list(self._camera)
-
         # All WCS of detectors
         self._wcsAll = dict()
 
@@ -44,7 +41,7 @@ class WcsSol(object):
             Detectors.
         """
 
-        return self._detectors
+        return list(self._camera)
 
     def getCamera(self):
         """Get the camera object.
@@ -78,7 +75,7 @@ class WcsSol(object):
                               rotType=SKY)
 
         self._wcsAll = dict()
-        for detector in self._detectors:
+        for detector in self.getDetectors():
             detectorName = detector.getName()
             wcs = createInitialSkyWcs(self._obs, detector, flipX=self._flipX)
             self._wcsAll[detectorName] = wcs

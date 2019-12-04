@@ -1,5 +1,4 @@
-from lsst.obs.lsstSim import LsstSimMapper
-from lsst.afw.cameraGeom import WAVEFRONT
+from lsst.obs.lsst.lsstCamMapper import LsstCamMapper
 
 from lsst.ts.wep.bsc.CameraData import CameraData
 
@@ -8,9 +7,9 @@ class LsstCam(CameraData):
 
     def __init__(self):
         """Initialize the LSST camera class."""
+        super().__init__(LsstCamMapper().camera, False)
 
-        super(LsstCam, self).__init__(LsstSimMapper().camera)
-        self._initDetectors(WAVEFRONT)
+        # Not WFS support at w_2019_38 yet.
 
 
 if __name__ == "__main__":

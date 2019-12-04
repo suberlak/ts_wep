@@ -7,17 +7,19 @@ from lsst.ts.wep.Utility import FilterType
 
 class CameraData(object):
 
-    def __init__(self, camera):
+    def __init__(self, camera, flipX):
         """Initialize the camera data class.
 
         Parameters
         ----------
         camera : lsst.afw.cameraGeom.camera.camera.Camera
             A collection of Detectors that also supports coordinate
-            transformation. (the default is None.)
+            transformation.
+        flipX : bool
+            If False, +X is along W, if True +X is along E.
         """
 
-        self._wcs = WcsSol(camera=camera)
+        self._wcs = WcsSol(camera, flipX)
 
         # List of wavefront sensor CCD name
         self._wfsCcd = []
@@ -27,40 +29,35 @@ class CameraData(object):
         self._corners = dict()
         self._dimension = dict()
 
-    def setWfsCcdList(self, wfsCcdList):
-        """Set the wavefront sensor (WFS) charge-coupled devide (CCD) list.
+        self._initDetectors()
 
-        Parameters
-        ----------
-        wfsCcdList : list
-            Wavefront sensor list (e.g. ["R:2,2 S:1,1", "R:2,2 S:1,0"]).
-        """
+    def _initDetectors(self):
+        """Initializes the camera detectors."""
 
-        self._wfsCcd = wfsCcdList
+        for detector in self._wcs.getDetectors():
 
-    def setWfsCorners(self, wfsCorners):
-        """Set the wavefront sensor corner information.
+            # Collect the ccd name
+            detectorName = detector.getName()
+            self._wfsCcd.append(detectorName)
 
-        Parameters
-        ----------
-        wfsCorners : dict
-            Wavefront corner information. The dictionary key is the CCD name
-            (e.g. "R:2,2 S:1,1").
-        """
+            # Get the detector corners
+            bbox = detector.getBBox()
+            xmin = bbox.getMinX()
+            xmax = bbox.getMaxX()
+            ymin = bbox.getMinY()
+            ymax = bbox.getMaxY()
+            self._corners[detectorName] = \
+                (np.array([xmin, xmin, xmax, xmax]),
+                 np.array([ymin, ymax, ymin, ymax]))
 
-        self._corners = wfsCorners
+            # The CCD dimension here is an estimation.
+            # Based on LCA-13381, there are three types of sensors.
+            # e2V CCD250: 40.04 mm x 40.96 mm
+            # STA 4400: 20.00 mm x 40.72 mm
+            # STA 3800C: 40.00 mm x 40.72 mm
 
-    def setCcdDims(self, ccdDims):
-        """Set the charge-coupled device (CCD) dimenstions.
-
-        Parameters
-        ----------
-        ccdDims : dict
-            CCD dimensions. The dictionary key is the CCD name (e.g.
-            "R:2,2 S:1,1").
-        """
-
-        self._dimension = ccdDims
+            dim1, dim2 = bbox.getDimensions()
+            self._dimension[detectorName] = (int(dim1), int(dim2))
 
     def getWfsCcdList(self):
         """Get the list of wavefront sensor CCD list.
@@ -105,43 +102,7 @@ class CameraData(object):
 
         return self._dimension[detectorName]
 
-    def _initDetectors(self, detectorType):
-        """Initializes the camera detectors.
-
-        Parameters
-        ----------
-        detectorType : lsst.afw.cameraGeom.detector.detector.DetectorType
-            Detector type.
-        """
-
-        for detector in self._wcs.getCamera():
-
-            if (detector.getType() == detectorType):
-
-                # Collect the ccd name
-                detectorName = detector.getName()
-                self._wfsCcd.append(detectorName)
-
-                # Get the detector corners
-                bbox = detector.getBBox()
-                xmin = bbox.getMinX()
-                xmax = bbox.getMaxX()
-                ymin = bbox.getMinY()
-                ymax = bbox.getMaxY()
-                self._corners[detectorName] = \
-                    (np.array([xmin, xmin, xmax, xmax]),
-                     np.array([ymin, ymax, ymin, ymax]))
-
-                # The CCD dimension here is an estimation.
-                # Based on LCA-13381, there are three types of sensors.
-                # e2V CCD250: 40.04 mm x 40.96 mm
-                # STA 4400: 20.00 mm x 40.72 mm
-                # STA 3800C: 40.00 mm x 40.72 mm
-
-                dim1, dim2 = bbox.getDimensions()
-                self._dimension[detectorName] = (int(dim1), int(dim2))
-
-    def setObsMetaData(self, ra, dec, rotSkyPos, mjd=59580.0):
+    def setObsMetaData(self, ra, dec, rotSkyPos):
         """Set the observation meta data.
 
         Parameters
@@ -152,11 +113,9 @@ class CameraData(object):
             Pointing decl in degree.
         rotSkyPos : float
             The orientation of the telescope in degrees.
-        mjd : float
-            Camera MJD. (the default is 59580.0.)
         """
 
-        self._wcs.setObsMetaData(ra, dec, rotSkyPos, mjd=mjd)
+        self._wcs.setObsMetaData(ra, dec, rotSkyPos)
 
     def populatePixelFromRADecl(self, stars):
         """Populates the RAInPixel and DeclInPixel coordinates to the stars.
@@ -180,7 +139,7 @@ class CameraData(object):
         decl = populatedStar.getDecl()
         chipName = np.array([populatedStar.getDetector()] * len(ra))
         raInPixel, declInPixel = self._wcs.pixelCoordsFromRaDec(
-            ra, decl, chipName=chipName, epoch=2000.0, includeDistortion=True)
+            ra, decl, chipName)
 
         populatedStar.setRaInPixel(raInPixel)
         populatedStar.setDeclInPixel(declInPixel)
@@ -262,19 +221,19 @@ class CameraData(object):
         on the wavefront sensor list.
 
         Returns:
-            [dict] -- (ra, dec) of four corners of each sensor with the name
+            dict -- (ra, dec) of four corners of each sensor with the name
             of sensor as a list. The dictionary key is the sensor name.
         """
 
         return self._getDetectorRaDec(self._wfsCcd)
 
-    def _getDetectorRaDec(self, detectorList):
+    def _getDetectorRaDec(self, chipNames):
         """Get the (ra, dec) of CCD corners in the detector list.
 
         Parameters
         ----------
-        detectorList : list
-            List of detectors. For example, ["R:2,2 S:1,1", "R:2,2 S:0,1"].
+        chipNames : list
+            List of chip name. For example, ["R22_S11", "R22_S01"].
 
         Returns
         -------
@@ -282,25 +241,23 @@ class CameraData(object):
             This method returns a dict of list.  The dict is keyed on the name
             of the wavefront sensor.  The list contains the (RA, Dec)
             coordinates of the corners of that sensor (RA, Dec are paired as
-            tuples). For example, output['R:0,0 S:2,2B'] = [(23.0, -5.0),
+            tuples). For example, output['R22_S11'] = [(23.0, -5.0),
             (23.1, -5.0), (23.0, -5.1), (23.1, -5.1)] would mean that the
-            wavefront sensor named 'R:0,0 S:2,2B' has its corners at RA 23,
+            wavefront sensor named 'R22_S11' has its corners at RA 23,
             Dec -5; RA 23.1, Dec -5; RA 23, Dec -5.1; and RA 23.1, Dec -5.1
             Coordinates are in degrees.
         """
 
         ra_dec_out = dict()
-        for detector in detectorList:
+        for chipName in chipNames:
 
-            coords = self._corners[detector]
-            xPix = coords[0]
-            yPix = coords[1]
+            coord = self._corners[chipName]
+            xPix = coord[0]
+            yPix = coord[1]
 
-            chipName = np.array([detector] * len(xPix))
-            ra, dec = self._wcs.raDecFromPixelCoords(
-                xPix, yPix, chipName, epoch=2000.0, includeDistortion=True)
+            ra, dec = self._wcs.raDecFromPixelCoords(xPix, yPix, chipName)
 
-            ra_dec_out[detector] = [(ra[0], dec[0]), (ra[1], dec[1]),
+            ra_dec_out[chipName] = [(ra[0], dec[0]), (ra[1], dec[1]),
                                     (ra[2], dec[2]), (ra[3], dec[3])]
 
         return ra_dec_out
