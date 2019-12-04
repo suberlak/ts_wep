@@ -2,8 +2,7 @@ import os
 import warnings
 
 from lsst.ts.wep.Utility import getModulePath, getConfigDir, BscDbType, \
-    FilterType, abbrevDectectorName, getBscDbType, getImageType, \
-    getCentroidFindType, ImageType
+    FilterType, getBscDbType, getImageType, getCentroidFindType, ImageType
 from lsst.ts.wep.CamDataCollector import CamDataCollector
 from lsst.ts.wep.CamIsrWrapper import CamIsrWrapper
 from lsst.ts.wep.SourceProcessor import SourceProcessor
@@ -624,8 +623,7 @@ class WEPCalculation(object):
             sensorWavefrontData = SensorWavefrontData()
 
             # Set the sensor Id
-            abbrevSensor = abbrevDectectorName(sensor)
-            sensorIdList = mapSensorNameAndId.mapSensorNameToId(abbrevSensor)
+            sensorIdList = mapSensorNameAndId.mapSensorNameToId(sensor)
             sensorId = sensorIdList[0]
             sensorWavefrontData.setSensorId(sensorId)
 

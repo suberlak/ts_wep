@@ -72,6 +72,9 @@ class TestSourceSelector(unittest.TestCase):
             self.sourSelc.getTargetStar(offset=-1000)
 
         self.assertEqual(len(wavefrontSensors), 3)
+        self.assertIn("R22_S10", wavefrontSensors)
+        self.assertIn("R22_S12", wavefrontSensors)
+        self.assertIn("R22_S21", wavefrontSensors)
 
     def testGetTargetStarByFileWithWrongDbType(self):
 

@@ -4,15 +4,13 @@ import numpy as np
 from lsst.ts.wep.ButlerWrapper import ButlerWrapper
 from lsst.ts.wep.DefocalImage import DefocalImage
 from lsst.ts.wep.DonutImage import DonutImage
-from lsst.ts.wep.Utility import abbrevDectectorName, searchDonutPos, \
-    DefocalType, ImageType
+from lsst.ts.wep.Utility import searchDonutPos, DefocalType, ImageType
 
 
 class WepController(object):
 
-    CORNER_WFS_LIST = ["R:0,0 S:2,2,A", "R:0,0 S:2,2,B", "R:0,4 S:2,0,A",
-                       "R:0,4 S:2,0,B", "R:4,0 S:0,2,A", "R:4,0 S:0,2,B",
-                       "R:4,4 S:0,0,A", "R:4,4 S:0,0,B"]
+    CORNER_WFS_LIST = ["R00W_SW0", "R00W_SW1", "R04W_SW0", "R04W_SW1",
+                       "R40W_SW0", "R40W_SW1", "R44W_SW0", "R44W_SW1"]
 
     def __init__(self, dataCollector, isrWrapper, sourSelc, sourProc, wfEsti):
         """Initialize the wavefront estimation pipeline (WEP) controller class.
@@ -190,7 +188,7 @@ class WepController(object):
         for sensorName in sensorNameList:
 
             # Get the sensor name information
-            raft, sensor = self._getSensorInfo(sensorName)[0:2]
+            raft, sensor = self._getSensorInfo(sensorName)
 
             # The intra/ extra defocal images are decided by obsId
             imgList = []
@@ -225,7 +223,7 @@ class WepController(object):
         Parameters
         ----------
         sensorName : str
-            Sensor name (e.g. "R:2,2 S:1,1" or "R:0,0 S:2,2,A")
+            Sensor name (e.g. "R22_S11" or "R00W_SW0")
 
         Returns
         -------
@@ -233,23 +231,15 @@ class WepController(object):
             Raft.
         str
             Sensor.
-        str
-            Channel.
         """
 
-        raft = sensor = channel = None
+        m = re.match(r"R(\w*)_S(\w*)", sensorName)
+        raft, sensor = m.groups()
 
-        # Use the regular expression to analyze the input name
-        m = re.match(r"R:(\d,\d) S:(\d,\d)(?:,([A,B]))?$", sensorName)
-        if (m is not None):
-            raft, sensor, channel = m.groups()[0:3]
+        raftAbbName = "R" + raft
+        sensorAbbName = "S" + sensor
 
-        # This is for the phosim mapper use.
-        # For example, raft is "R22" and sensor is "S11".
-        raftAbbName = "R" + raft[0] + raft[-1]
-        sensorAbbName = "S" + sensor[0] + sensor[-1]
-
-        return raftAbbName, sensorAbbName, channel
+        return raftAbbName, sensorAbbName
 
     def _transImgDmCoorToCamCoor(self, dmImg):
         """Transfrom the image in DM coordinate to camera coordinate.
@@ -343,11 +333,8 @@ class WepController(object):
         donutMap = dict()
         for sensorName, nbrStar in neighborStarMap.items():
 
-            # Get the abbraviated sensor name
-            abbrevName = abbrevDectectorName(sensorName)
-
             # Configure the source processor
-            self.sourProc.config(sensorName=abbrevName)
+            self.sourProc.config(sensorName=sensorName)
 
             # Get the defocal images: [intra, extra]
             defocalImgList = [wfsImgMap[sensorName].getIntraImg(),
@@ -409,7 +396,7 @@ class WepController(object):
 
                             # Get the Euler angle
                             eulerZangle = round(self.sourProc.getEulerZinDeg(
-                                abbrevName))
+                                sensorName))
 
                             # Change the sign if the angle < 0
                             while (eulerZangle < 0):
@@ -511,15 +498,15 @@ class WepController(object):
 
                 # Get the intra- and extra-focal donut images
 
-                # Check the sensor is the corner WFS or not. Only consider "A"
-                # Intra: C0 -> A; Extra: C1 -> B
+                # Check the sensor is the corner WFS or not. Only consider "W0"
+                # Intra: C0 -> W0; Extra: C1 -> W1
 
                 # Look for the intra-focal image
-                if sensorName.endswith("A"):
+                if sensorName.endswith("W0"):
                     intraDonut = donutList[ii]
 
                     # Get the extra-focal sensor name
-                    extraFocalSensorName = sensorName.replace("A", "B")
+                    extraFocalSensorName = sensorName.replace("W0", "W1")
 
                     # Get the donut list of extra-focal sensor
                     extraDonutList = donutMap[extraFocalSensorName]
@@ -528,7 +515,7 @@ class WepController(object):
                     else:
                         continue
                 # Pass the extra-focal image
-                elif sensorName.endswith("B"):
+                elif sensorName.endswith("W1"):
                     continue
                 # Scientific sensor
                 else:
