@@ -97,7 +97,8 @@ class TestLocalDatabaseForStarFile(unittest.TestCase):
         self._createTable()
 
         skyFilePath = self._writeStarFile("noStar.txt")
-        idAll = self._insertDataToDbAndGetAllId(skyFilePath)
+        with self.assertWarns(UserWarning):
+            idAll = self._insertDataToDbAndGetAllId(skyFilePath)
 
         self.assertEqual(len(idAll), 0)
 

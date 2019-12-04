@@ -14,16 +14,12 @@ class TestLsstCam(unittest.TestCase):
     def testGetWfsCcdList(self):
 
         wfsList = self.cam.getWfsCcdList()
-
-        # Should be 8 WFS in the final
-        self.assertEqual(len(wfsList), 189)
+        self.assertEqual(len(wfsList), 8)
 
     def testGetWavefrontSensor(self):
 
         wfsData = self.cam.getWavefrontSensor()
-
-        # Should be 8 WFS in the final
-        self.assertEqual(len(wfsData), 189)
+        self.assertEqual(len(wfsData), 8)
 
 
 if __name__ == "__main__":

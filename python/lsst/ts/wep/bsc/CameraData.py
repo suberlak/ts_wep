@@ -7,7 +7,7 @@ from lsst.ts.wep.Utility import FilterType
 
 class CameraData(object):
 
-    def __init__(self, camera, flipX):
+    def __init__(self, camera, flipX, detectorTypes):
         """Initialize the camera data class.
 
         Parameters
@@ -17,6 +17,9 @@ class CameraData(object):
             transformation.
         flipX : bool
             If False, +X is along W, if True +X is along E.
+        detectorTypes : list[lsst.afw.cameraGeom.detector.detector.
+                             DetectorType]
+            Detector types.
         """
 
         self._wcs = WcsSol(camera, flipX)
@@ -29,35 +32,44 @@ class CameraData(object):
         self._corners = dict()
         self._dimension = dict()
 
-        self._initDetectors()
+        self._initDetectors(detectorTypes)
 
-    def _initDetectors(self):
-        """Initializes the camera detectors."""
+    def _initDetectors(self, detectorTypes):
+        """Initializes the camera detectors.
+
+        Parameters
+        ----------
+        detectorTypes : list[lsst.afw.cameraGeom.detector.detector.
+                             DetectorType]
+            Detector types.
+        """
 
         for detector in self._wcs.getDetectors():
 
-            # Collect the ccd name
-            detectorName = detector.getName()
-            self._wfsCcd.append(detectorName)
+            if detector.getType() in detectorTypes:
 
-            # Get the detector corners
-            bbox = detector.getBBox()
-            xmin = bbox.getMinX()
-            xmax = bbox.getMaxX()
-            ymin = bbox.getMinY()
-            ymax = bbox.getMaxY()
-            self._corners[detectorName] = \
-                (np.array([xmin, xmin, xmax, xmax]),
-                 np.array([ymin, ymax, ymin, ymax]))
+                # Collect the ccd name
+                detectorName = detector.getName()
+                self._wfsCcd.append(detectorName)
 
-            # The CCD dimension here is an estimation.
-            # Based on LCA-13381, there are three types of sensors.
-            # e2V CCD250: 40.04 mm x 40.96 mm
-            # STA 4400: 20.00 mm x 40.72 mm
-            # STA 3800C: 40.00 mm x 40.72 mm
+                # Get the detector corners
+                bbox = detector.getBBox()
+                xmin = bbox.getMinX()
+                xmax = bbox.getMaxX()
+                ymin = bbox.getMinY()
+                ymax = bbox.getMaxY()
+                self._corners[detectorName] = \
+                    (np.array([xmin, xmin, xmax, xmax]),
+                     np.array([ymin, ymax, ymin, ymax]))
 
-            dim1, dim2 = bbox.getDimensions()
-            self._dimension[detectorName] = (int(dim1), int(dim2))
+                # The CCD dimension here is an estimation.
+                # Based on LCA-13381, there are three types of sensors.
+                # e2V CCD250: 40.04 mm x 40.96 mm
+                # STA 4400: 20.00 mm x 40.72 mm
+                # STA 3800C: 40.00 mm x 40.72 mm
+
+                dim1, dim2 = bbox.getDimensions()
+                self._dimension[detectorName] = (int(dim1), int(dim2))
 
     def getWfsCcdList(self):
         """Get the list of wavefront sensor CCD list.
