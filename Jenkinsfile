@@ -18,6 +18,8 @@ pipeline {
     }
 
     environment {
+        // Development tool set
+        DEV_TOOL="/opt/rh/devtoolset-8/enable"
         // Position of LSST stack directory
         LSST_STACK="/opt/lsst/software/stack"
         // LSST Pipeline Version
@@ -36,6 +38,7 @@ pipeline {
                 // to install the packages.
                 withEnv(["HOME=${env.WORKSPACE}"]) {
                     sh """
+                        source ${env.DEV_TOOL}
                         source ${env.LSST_STACK}/loadLSST.bash
                         conda install -y scikit-image
                         git clone --branch master https://github.com/lsst-dm/phosim_utils.git
@@ -60,6 +63,7 @@ pipeline {
                 // Pytest needs to export the junit report.
                 withEnv(["HOME=${env.WORKSPACE}"]) {
                     sh """
+                        source ${env.DEV_TOOL}
                         source ${env.LSST_STACK}/loadLSST.bash
                         cd phosim_utils/
                         setup -k -r . -t ${env.LSST_VERSION}
