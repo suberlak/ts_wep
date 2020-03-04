@@ -325,7 +325,8 @@ class WEPCalculation(object):
 
         return self.rotSkyPos
 
-    def calculateWavefrontErrors(self, rawExpData, extraRawExpData=None):
+    def calculateWavefrontErrors(self, rawExpData, extraRawExpData=None,postageImg=False,
+                                postageImgDir=None):
         """Calculate the wavefront errors.
 
         Parameters
@@ -336,7 +337,9 @@ class WEPCalculation(object):
             exposure data.
         extraRawExpData : RawExpData, optional
             This is the extra-focal raw exposure data if not None. (the default
-            is None.)
+            is None.
+        postageImg : True/False - whether to save postage stamp images of donuts 
+        postageImgDir : a directory where to save them 
 
         Returns
         -------
@@ -388,7 +391,7 @@ class WEPCalculation(object):
             extraObsId = extraObsIdList[0]
             obsIdList = [intraObsId, extraObsId]
 
-        donutMap = self._calcWfErr(neighborStarMap, obsIdList)
+        donutMap = self._calcWfErr(neighborStarMap, obsIdList,postageImg,postageImgDir)
 
         listOfWfErr = self._populateListOfSensorWavefrontData(donutMap)
 
@@ -559,7 +562,8 @@ class WEPCalculation(object):
 
         return skyFile
 
-    def _calcWfErr(self, neighborStarMap, obsIdList):
+    def _calcWfErr(self, neighborStarMap, obsIdList,postageImg=False,
+        postageImgDir=None):
         """Calculate the wavefront error.
 
         Only consider one intra-focal and one extra-focal images at this
@@ -573,6 +577,9 @@ class WEPCalculation(object):
         obsIdList : list[int]
             Observation Id list in [intraObsId, extraObsId]. If the input is
             [intraObsId], this means the corner WFS.
+        
+        postageImg : True/False - whether to save postage stamp images of donuts 
+        postageImgDir : a directory where to save them 
 
         Returns
         -------
@@ -595,7 +602,8 @@ class WEPCalculation(object):
         doDeblending = self.settingFile.getSetting("doDeblending")
         donutMap = self.wepCntlr.getDonutMap(
             neighborStarMap, wfsImgMap, self.getFilter(),
-            doDeblending=doDeblending)
+            doDeblending=doDeblending,postageImg=postageImg, 
+            postageImgDir=postageImgDir)
 
         donutMap = self.wepCntlr.calcWfErr(donutMap)
 
