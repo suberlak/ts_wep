@@ -405,11 +405,18 @@ class WepController(object):
                             sizeInPix = self.wfEsti.getSizeInPix()
                             x0 = np.floor(realcx - sizeInPix / 2).astype("int")
                             y0 = np.floor(realcy - sizeInPix / 2).astype("int")
+
+                            if postageImg:  # print image before resizing 
+                                fname = postageImgDir+'/'+pre+'_imgDeblend_full_sensor-'+abbrevName+\
+                                        '_star-'+str(starIdIdx)+'.txt'
+                                np.savetxt(fname,imgDeblend)
+                                print('Saving postage stamp image as %s'%fname)
+
                             imgDeblend = imgDeblend[y0:y0 + sizeInPix,
                                                     x0:x0 + sizeInPix]
 
-                            if postageImg: 
-                                fname = postageImgDir+'/'+pre+'_imgDeblend_sensor-'+abbrevName+\
+                            if postageImg:  # print image after resizing 
+                                fname = postageImgDir+'/'+pre+'_imgDeblend_resized_sensor-'+abbrevName+\
                                         '_star-'+str(starIdIdx)+'.txt'
                                 np.savetxt(fname,imgDeblend)
                                 print('Saving postage stamp image as %s'%fname)
