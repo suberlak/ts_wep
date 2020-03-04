@@ -314,7 +314,7 @@ class WepController(object):
         pass
 
     def getDonutMap(self, neighborStarMap, wfsImgMap, filterType,
-                    doDeblending=False):
+                    doDeblending=False, postageImg=False, postageImgDir=None):
         """Get the donut map on each wavefront sensor (WFS).
 
         Parameters
@@ -358,7 +358,7 @@ class WepController(object):
             for starIdIdx in range(len(brightStarIdList)):
 
                 # Get the single star map
-                for jj in range(len(defocalImgList)):
+                for jj,pre in zip(range(len(defocalImgList)),['intra','extra']):
 
                     ccdImg = defocalImgList[jj]
 
@@ -368,6 +368,11 @@ class WepController(object):
                             offsetX, offsetY = \
                             self.sourProc.getSingleTargetImage(
                                 ccdImg, nbrStar, starIdIdx, filterType)
+                        if postageImg: 
+                            fname = postageImgDir+'/'+pre+'_singleSciImg_sensor-'+abbrevName+\
+                                    '_star-'+str(starIdIdx)+'.txt'
+                            np.savetxt(fname,singleSciNeiImg)
+                            print('Saving postage stamp image as %s'%fname)
 
                         # Only consider the single donut if no deblending
                         if (not doDeblending) and (len(magRatio) != 1):
@@ -402,6 +407,12 @@ class WepController(object):
                             y0 = np.floor(realcy - sizeInPix / 2).astype("int")
                             imgDeblend = imgDeblend[y0:y0 + sizeInPix,
                                                     x0:x0 + sizeInPix]
+
+                            if postageImg: 
+                                fname = postageImgDir+'/'+pre+'_imgDeblend_sensor-'+abbrevName+\
+                                        '_star-'+str(starIdIdx)+'.txt'
+                                np.savetxt(fname,imgDeblend)
+                                print('Saving postage stamp image as %s'%fname)
 
                         # Rotate the image if the sensor is the corner
                         # wavefront sensor
