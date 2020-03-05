@@ -8,14 +8,17 @@ from lsst.ts.wep.deblend.AdapThresImage import AdapThresImage
 from lsst.ts.wep.deblend.nelderMeadModify import nelderMeadModify
 
 from scipy.ndimage.measurements import center_of_mass
+from scipy.ndimage import convolve
+from skimage.draw import circle
 
 
 class BlendedImageDecorator(object):
 
-    def __init__(self):
+    def __init__(self, new_centroid=False):
         """Initialize the BlendedImageDecorator class."""
 
         self.__image = AdapThresImage()
+        self.new_centroid = new_centroid
 
     def __getattr__(self, attributeName):
         """Use the functions and attributes hold by the object.
@@ -33,8 +36,54 @@ class BlendedImageDecorator(object):
 
         return getattr(self.__image, attributeName)
 
+    from scipy import ndimage
+
+    def newCentroidFinder(self, imageBinary, templateImgBinary):
+        """New Version of Centroid Finder
+
+        Parameters
+        ----------
+        imageBinary: numpy.ndarray
+            Binary image of postage stamp
+
+        templateImgBinary: numpy.ndarray
+            Binary image of template donut
+
+        Returns
+        -------
+        nx, ny: float
+            x, y pixel coordinates for donut centroid
+        """
+
+        temp_convolve = convolve(imageBinary, templateImgBinary, mode='constant', cval=0.0)
+        ranked_convolve = np.argsort(temp_convolve.flatten())[::-1]
+        nx, ny = np.unravel_index(ranked_convolve[0], np.shape(imageBinary))
+        
+        return nx, ny
+
+    def createTemplateImage(self):
+        """
+        Create deblended donut template image for testing.
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        template_array: numpy.ndarray
+            Template donut array for convolution centroid finding
+        """
+        template_array = np.zeros((140, 140))
+        rr, cc = circle(70, 70, 63, (140, 140))
+        template_array[rr, cc] += 1
+        rr_in, cc_in = circle(70, 70, 35, (140, 140))
+        template_array[rr_in, cc_in] -= 1
+        
+        return template_array
+
     def deblendDonut(self, iniGuessXY):
-        """Get the deblended donut image.
+        """
+        Get the deblended donut image.
 
         Parameters
         ----------
@@ -57,21 +106,40 @@ class BlendedImageDecorator(object):
         # Postion of centroid
 
         # Get the initial guess of brightest donut
-        centroidFind = self.getCentroidFind()
-        imgBinary = centroidFind.getImgBinary(self.getImg())
-        realcx, realcy, realR = centroidFind.getCenterAndRfromImgBinary(
-            imgBinary)
+        if self.new_centroid is False:
+            centroidFind = self.getCentroidFind()
+            imgBinary = centroidFind.getImgBinary(self.getImg())
+            realcx, realcy, realR = centroidFind.getCenterAndRfromImgBinary(
+                imgBinary)
 
-        # Remove the salt and pepper noise noise of resImgBinary
-        imgBinary = binary_opening(imgBinary).astype(float)
-        imgBinary = binary_closing(imgBinary).astype(float)
+            # Remove the salt and pepper noise noise of resImgBinary
+            imgBinary = binary_opening(imgBinary).astype(float)
+            imgBinary = binary_closing(imgBinary).astype(float)
 
-        # Check the image quality
-        if (not realcx):
-            return imgDeblend, realcx, realcy
+            # Check the image quality
+            if (not realcx):
+                return imgDeblend, realcx, realcy
 
-        # Get the binary image by adaptive threshold
-        adapcx, adapcy, adapR, adapImgBinary = self.getCenterAndR_adap()
+            # Get the binary image by adaptive threshold
+            adapcx, adapcy, adapR, adapImgBinary = self.getCenterAndR_adap()
+        else:
+            templateArray = self.createTemplateImage()
+            templateImage = AdapThresImage()
+            templateImage.setImg(image=templateArray)
+            templatecx, templatecy, templateR, templateImgBinary = \
+                templateImage.getCenterAndR_adap()
+
+            adapcx, adapcy, adapR, adapImgBinary = self.getCenterAndR_adap()
+            realcx, realcy = self.newCentroidFinder(adapImgBinary, templateImgBinary)
+            imgBinary = np.zeros(np.shape(adapImgBinary))
+            imgBinary[:np.shape(templateImgBinary)[0],
+                      :np.shape(templateImgBinary)[1]] += templateImgBinary
+
+            xBin = int(realcx - templatecx)
+            yBin = int(realcy - templatecy)
+
+            imgBinary = shift(imgBinary, [xBin, yBin])
+            imgBinary[imgBinary < 0] = 0
 
         # Calculate the system error by only taking the background signal
         bg1D = self.getImg().flatten()
