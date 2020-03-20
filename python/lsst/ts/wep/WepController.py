@@ -369,10 +369,11 @@ class WepController(object):
                             self.sourProc.getSingleTargetImage(
                                 ccdImg, nbrStar, starIdIdx, filterType)
                         if postageImg: 
+
                             fname = postageImgDir+'/'+pre+'_singleSciImg_sensor-'+abbrevName+\
                                     '_star-'+str(starIdIdx)+'.txt'
                             np.savetxt(fname,singleSciNeiImg)
-                            print('Saving postage stamp image as %s'%fname)
+                            print('\nSaving postage stamp as %s'%fname)
 
                         # Only consider the single donut if no deblending
                         if (not doDeblending) and (len(magRatio) != 1):
@@ -563,6 +564,8 @@ class WepController(object):
                 extraImg = extraDonut.getExtraImg()
 
                 # Calculate the wavefront error
+                print('starId=',intraDonut.getStarId() )
+                print('donut px pos = ', intraDonut.getPixelPos())
                 zer4UpNm = self._calcSglWfErr(intraImg, extraImg, intraFieldXY,
                                               extraFieldXY)
 
