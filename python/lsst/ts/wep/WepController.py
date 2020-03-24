@@ -339,11 +339,14 @@ class WepController(object):
             dictionary item is the list of donut image (type:
             list[DonutImage]).
         """
+        if postageImg:
+            print('Saving postage stamp images in %s'%postageImgDir)
 
         donutMap = dict()
         for sensorName, nbrStar in neighborStarMap.items():
 
             # Get the abbraviated sensor name
+            # that's eg., R22_S20 ... 
             abbrevName = abbrevDectectorName(sensorName)
 
             # Configure the source processor
@@ -358,7 +361,7 @@ class WepController(object):
             for starIdIdx in range(len(brightStarIdList)):
 
                 # Get the single star map
-                for jj,pre in zip(range(len(defocalImgList)),['intra','extra']):
+                for jj,preFname in zip(range(len(defocalImgList)),['intra','extra']):
 
                     ccdImg = defocalImgList[jj]
 
@@ -368,11 +371,18 @@ class WepController(object):
                             offsetX, offsetY = \
                             self.sourProc.getSingleTargetImage(
                                 ccdImg, nbrStar, starIdIdx, filterType)
-                        if postageImg: 
 
-                            fname = postageImgDir+'/'+pre+'_singleSciImg_sensor-'+abbrevName+\
-                                    '_star-'+str(starIdIdx)+'.txt'
-                            np.savetxt(fname,singleSciNeiImg)
+                        # read the catalog starId :
+                        starId = brightStarIdList[starIdIdx]
+
+                        # get the postageImg fnameEnd : 
+                        postFname = '_sensor-'+abbrevName+\
+                                    '_star-'+str(starIdIdx)+\
+                                    '_id-'+str(starId)+'.txt'
+
+                        if postageImg: 
+                            fname = preFname+'_singleSciImg'+postFname
+                            np.savetxt(postageImgDir+'/'+fname,singleSciNeiImg)
                             print('\nSaving postage stamp as %s'%fname)
 
                         # Only consider the single donut if no deblending
@@ -408,18 +418,16 @@ class WepController(object):
                             y0 = np.floor(realcy - sizeInPix / 2).astype("int")
 
                             if postageImg:  # print image before resizing 
-                                fname = postageImgDir+'/'+pre+'_imgDeblend_full_sensor-'+abbrevName+\
-                                        '_star-'+str(starIdIdx)+'.txt'
-                                np.savetxt(fname,imgDeblend)
+                                fname = preFname+'_imgDeblend_full'+postFname
+                                np.savetxt(postageImgDir+'/'+fname,imgDeblend)
                                 print('Saving postage stamp image as %s'%fname)
 
                             imgDeblend = imgDeblend[y0:y0 + sizeInPix,
                                                     x0:x0 + sizeInPix]
 
                             if postageImg:  # print image after resizing 
-                                fname = postageImgDir+'/'+pre+'_imgDeblend_resized_sensor-'+abbrevName+\
-                                        '_star-'+str(starIdIdx)+'.txt'
-                                np.savetxt(fname,imgDeblend)
+                                fname = preFname+'_imgDeblend_resized'+postFname
+                                np.savetxt(postageImgDir+'/'+fname,imgDeblend)
                                 print('Saving postage stamp image as %s'%fname)
 
                         # Rotate the image if the sensor is the corner
@@ -564,6 +572,7 @@ class WepController(object):
                 extraImg = extraDonut.getExtraImg()
 
                 # Calculate the wavefront error
+                print('Sensor %s, ')
                 print('starId=',intraDonut.getStarId() )
                 print('donut px pos = ', intraDonut.getPixelPos())
                 zer4UpNm = self._calcSglWfErr(intraImg, extraImg, intraFieldXY,
