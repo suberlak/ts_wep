@@ -572,9 +572,11 @@ class WepController(object):
                 extraImg = extraDonut.getExtraImg()
 
                 # Calculate the wavefront error
-                print('Sensor %s, ')
-                print('starId=',intraDonut.getStarId() )
-                print('donut px pos = ', intraDonut.getPixelPos())
+                print('\n sensorName ', sensorName, 
+                      ' abbrevDetectorName ',abbrevDectectorName(sensorName),
+                      ' starId=',intraDonut.getStarId(), 
+                      ' donut px pos = ', intraDonut.getPixelPos()
+                      )
                 zer4UpNm = self._calcSglWfErr(intraImg, extraImg, intraFieldXY,
                                               extraFieldXY)
 
