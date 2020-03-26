@@ -533,7 +533,7 @@ class WepController(object):
         """
 
         # initialize the storage array 
-        content = "# abbrevDetectorName\t focalPlane\t starId\t xpos\t ypos\t"
+        content = "# abbrevDetectorName\t focalPlane\t starId\t xpos\t ypos\n"
 
         for sensorName, donutList in donutMap.items():
 
@@ -581,13 +581,13 @@ class WepController(object):
                       ' donut px pos = ', intraDonut.getPixelPos()
                       )
         
-                content += "%s\t  %s\t %d\t %4.6f\t %4.6f\t "%(abbrevDectectorName(sensorName), 'intra', 
+                content += "%s\t  %s\t %d\t %4.6f\t %4.6f\n"%(abbrevDectectorName(sensorName), 'intra', 
                                                                     intraDonut.getStarId(),
                                                                     intraDonut.getPixelPos()[0],
                                                                     intraDonut.getPixelPos()[1]
                                                                    )
 
-                content += "%s\t  %s\t %d\t %4.6f\t %4.6f\t "%(abbrevDectectorName(sensorName), 'extra', 
+                content += "%s\t  %s\t %d\t %4.6f\t %4.6f\n"%(abbrevDectectorName(sensorName), 'extra', 
                                                                     extraDonut.getStarId(),
                                                                     extraDonut.getPixelPos()[0],
                                                                     extraDonut.getPixelPos()[1]
