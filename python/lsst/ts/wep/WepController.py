@@ -516,7 +516,7 @@ class WepController(object):
 
         return index
 
-    def calcWfErr(self, donutMap):
+    def calcWfErr(self, donutMap,postageImgDir=None):
         """Calculate the wavefront error in annular Zernike polynomials
         (z4-z22).
 
@@ -531,6 +531,9 @@ class WepController(object):
         dict
             Donut image map with calculated wavefront error.
         """
+
+        # initialize the storage array 
+        content = "# abbrevDetectorName\t focalPlane\t starId\t xpos\t ypos\t"
 
         for sensorName, donutList in donutMap.items():
 
@@ -571,18 +574,40 @@ class WepController(object):
                 intraImg = intraDonut.getIntraImg()
                 extraImg = extraDonut.getExtraImg()
 
-                # Calculate the wavefront error
+                
                 print('\n sensorName ', sensorName, 
                       ' abbrevDetectorName ',abbrevDectectorName(sensorName),
                       ' starId=',intraDonut.getStarId(), 
                       ' donut px pos = ', intraDonut.getPixelPos()
                       )
+        
+                content += "%s\t  %s\t %d\t %4.6f\t %4.6f\t "%(abbrevDectectorName(sensorName), 'intra', 
+                                                                    intraDonut.getStarId(),
+                                                                    intraDonut.getPixelPos()[0],
+                                                                    intraDonut.getPixelPos()[1]
+                                                                   )
+
+                content += "%s\t  %s\t %d\t %4.6f\t %4.6f\t "%(abbrevDectectorName(sensorName), 'extra', 
+                                                                    extraDonut.getStarId(),
+                                                                    extraDonut.getPixelPos()[0],
+                                                                    extraDonut.getPixelPos()[1]
+                                                                   )
+
+                # Calculate the wavefront error
                 zer4UpNm = self._calcSglWfErr(intraImg, extraImg, intraFieldXY,
                                               extraFieldXY)
 
                 # Put the value to the donut image
                 intraDonut.setWfErr(zer4UpNm)
                 extraDonut.setWfErr(zer4UpNm)
+
+        # Write info about donuts to a file
+        fname = 'donutStarsExtraIntra.txt'
+        outputFilePath = postageImgDir + fname
+        
+        fid = open(outputFilePath, "w")
+        fid.write(content)
+        fid.close()
 
         # Intentionally to expose this return value to show the input,
         # donutMap, has been modified.
