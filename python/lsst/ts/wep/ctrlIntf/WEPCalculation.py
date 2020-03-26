@@ -605,7 +605,7 @@ class WEPCalculation(object):
             doDeblending=doDeblending,postageImg=postageImg, 
             postageImgDir=postageImgDir)
 
-        donutMap = self.wepCntlr.calcWfErr(donutMap)
+        donutMap = self.wepCntlr.calcWfErr(donutMap,postageImgDir)
 
         return donutMap
 
