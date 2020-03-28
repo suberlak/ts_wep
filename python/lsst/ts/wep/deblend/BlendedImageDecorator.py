@@ -9,7 +9,9 @@ from lsst.ts.wep.deblend.nelderMeadModify import nelderMeadModify
 
 from scipy.ndimage.measurements import center_of_mass
 from scipy.ndimage import convolve
+from scipy.spatial.distance import cdist
 from skimage.draw import circle
+from sklearn.cluster import KMeans
 
 
 class BlendedImageDecorator(object):
@@ -38,7 +40,8 @@ class BlendedImageDecorator(object):
 
     from scipy import ndimage
 
-    def newCentroidFinder(self, imageBinary, templateImgBinary):
+    def newCentroidFinder(self, imageBinary, templateImgBinary,
+                          n_donuts):
         """New Version of Centroid Finder
 
         Parameters
@@ -57,9 +60,23 @@ class BlendedImageDecorator(object):
 
         temp_convolve = convolve(imageBinary, templateImgBinary, mode='constant', cval=0.0)
         ranked_convolve = np.argsort(temp_convolve.flatten())[::-1]
-        nx, ny = np.unravel_index(ranked_convolve[0], np.shape(imageBinary))
+        cutoff = len(np.where(temp_convolve.flatten() > 0.95*np.max(temp_convolve))[0])
+        ranked_convolve = ranked_convolve[:cutoff]
+        nx, ny = np.unravel_index(ranked_convolve, np.shape(imageBinary))
+
+        kmeans = KMeans(n_clusters=n_donuts).fit(np.array([ny, nx]).T)
+        labels = kmeans.labels_
+
+        cent_x = []
+        cent_y = []
+
+        for label_num in range(n_donuts):
+            nx_label, ny_label = np.unravel_index(ranked_convolve[labels == label_num][0], 
+                                                  np.shape(imageBinary))
+            cent_x.append(nx_label)
+            cent_y.append(ny_label)
         
-        return nx, ny
+        return cent_x, cent_y
 
     def createTemplateImage(self):
         """
@@ -81,7 +98,7 @@ class BlendedImageDecorator(object):
         
         return template_array
 
-    def deblendDonut(self, iniGuessXY):
+    def deblendDonut(self, iniGuessXY, n_donuts):
         """
         Get the deblended donut image.
 
@@ -130,7 +147,19 @@ class BlendedImageDecorator(object):
                 templateImage.getCenterAndR_adap()
 
             adapcx, adapcy, adapR, adapImgBinary = self.getCenterAndR_adap()
-            realcx, realcy = self.newCentroidFinder(adapImgBinary, templateImgBinary)
+            cx_list, cy_list = self.newCentroidFinder(adapImgBinary, 
+                                                      templateImgBinary,
+                                                      n_donuts)
+            # Order the centroids to figure out which is neighbor star
+            centroid_dist = cdist(np.array([iniGuessXY]),
+                                  np.array([cx_list, cy_list]).T)
+            iniGuess_dist_order = np.argsort(centroid_dist[0])
+            # Update coords of neighbor star and bright star with centroid pos
+            realcx = cx_list[iniGuess_dist_order[1]]
+            realcy = cy_list[iniGuess_dist_order[1]]
+            iniGuessXY = [cx_list[iniGuess_dist_order[0]], 
+                          cy_list[iniGuess_dist_order[0]]]
+
             imgBinary = np.zeros(np.shape(adapImgBinary))
             imgBinary[:np.shape(templateImgBinary)[0],
                       :np.shape(templateImgBinary)[1]] += templateImgBinary
@@ -164,8 +193,12 @@ class BlendedImageDecorator(object):
         # Calculate the shifts of x and y
         x0 = int(iniGuessXY[0] - realcx)
         y0 = int(iniGuessXY[1] - realcy)
+        if self.new_centroid is True:
+            neighbor_opt_array = np.array([y0, x0])
+        else:
+            neighbor_opt_array = np.array([x0, y0])
 
-        xoptNeighbor = nelderMeadModify(self._funcResidue, np.array([x0, y0]),
+        xoptNeighbor = nelderMeadModify(self._funcResidue, neighbor_opt_array,
                                         args=(imgBinary, resImgBinary), step=15)
 
         # Shift the main donut image to fitted position of neighboring star

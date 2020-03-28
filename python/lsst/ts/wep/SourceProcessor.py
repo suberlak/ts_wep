@@ -746,7 +746,8 @@ class SourceProcessor(object):
         # Do the deblending
         imgDeblend, realcx, realcy = \
             self.blendedImageDecorator.deblendDonut((allStarPosX[0],
-                                                     allStarPosY[0]))
+                                                     allStarPosY[0]),
+                                                     len(magRatio))
 
         return imgDeblend, realcx, realcy
 
