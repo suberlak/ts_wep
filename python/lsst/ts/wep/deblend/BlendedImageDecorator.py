@@ -1,6 +1,8 @@
+import os
 import numpy as np
 
-from scipy.ndimage.morphology import binary_opening, binary_closing, binary_erosion
+from scipy.ndimage.morphology import binary_opening, binary_closing, \
+    binary_erosion, binary_dilation
 from scipy.ndimage.interpolation import shift
 from scipy.optimize import minimize_scalar
 
@@ -12,6 +14,10 @@ from scipy.ndimage import convolve
 from scipy.spatial.distance import cdist
 from skimage.draw import circle
 from sklearn.cluster import KMeans
+
+from lsst.ts.wep.cwfs.Instrument import Instrument
+from lsst.ts.wep.cwfs.CompensableImage import CompensableImage
+from lsst.ts.wep.Utility import getModulePath, getConfigDir, CamType
 
 
 class BlendedImageDecorator(object):
@@ -78,27 +84,51 @@ class BlendedImageDecorator(object):
         
         return cent_x, cent_y
 
-    def createTemplateImage(self):
-        """
-        Create deblended donut template image for testing.
+    # def createTemplateImage(self, template_width=151, boundaryT=9.1):
+    #     """
+    #     Create deblended donut template image for testing.
 
-        Parameters
-        ----------
+    #     Parameters
+    #     ----------
 
-        Returns
-        -------
-        template_array: numpy.ndarray
-            Template donut array for convolution centroid finding
-        """
-        template_array = np.zeros((140, 140))
-        rr, cc = circle(70, 70, 63, (140, 140))
-        template_array[rr, cc] += 1
-        rr_in, cc_in = circle(70, 70, 35, (140, 140))
-        template_array[rr_in, cc_in] -= 1
-        
+    #     Returns
+    #     -------
+    #     img.cMask: numpy.ndarray
+    #         Template donut array for convolution centroid finding
+    #     """
+    #     # Load Instrument parameters
+    #     instDir = os.path.join(getConfigDir(), "cwfs", "instData")
+    #     dimOfDonutOnSensor = template_width
+    #     inst = Instrument(instDir)
+    #     inst.config(CamType.LsstCam, dimOfDonutOnSensor)
+
+    #     #create image for mask
+    #     img = CompensableImage()
+
+    #     #define postion of dounut in degrees relative to center of field
+    #     maskScalingFactorLocal=1
+    #     img.fieldX=0. # 1.25
+    #     img.fieldY=0. # 1.15
+    #     img.makeMask(inst, "onAxis", boundaryT, maskScalingFactorLocal)
+                
+    #     return img.cMask
+
+    def createTemplateImage(self, sensor_name, defocal_type):
+
+        if defocal_type == 'extra':
+            template_filename = os.path.join(getConfigDir(), 'deblend', 
+                                             'data', 
+                                             'extra_template-%s.txt' % sensor_name)
+        elif defocal_type == 'intra':
+            template_filename = os.path.join(getConfigDir(), 'deblend', 
+                                             'data', 
+                                             'intra_template-%s.txt' % sensor_name)
+        template_array = np.genfromtxt(template_filename)
+        template_array[template_array < 50] = 0.
+
         return template_array
 
-    def deblendDonut(self, iniGuessXY, n_donuts):
+    def deblendDonut(self, iniGuessXY, n_donuts, sensor_name, defocal_type):
         """
         Get the deblended donut image.
 
@@ -124,7 +154,7 @@ class BlendedImageDecorator(object):
 
         # Get the initial guess of brightest donut
         if self.new_centroid is False:
-            centroidFind = self.getCentroidFind()
+            centroidFind = self.getCentroidFind(sensor_name, defocal_type)
             imgBinary = centroidFind.getImgBinary(self.getImg())
             realcx, realcy, realR = centroidFind.getCenterAndRfromImgBinary(
                 imgBinary)
@@ -140,11 +170,13 @@ class BlendedImageDecorator(object):
             # Get the binary image by adaptive threshold
             adapcx, adapcy, adapR, adapImgBinary = self.getCenterAndR_adap()
         else:
-            templateArray = self.createTemplateImage()
+            templateArray = self.createTemplateImage(sensor_name, defocal_type)
             templateImage = AdapThresImage()
             templateImage.setImg(image=templateArray)
             templatecx, templatecy, templateR, templateImgBinary = \
                 templateImage.getCenterAndR_adap()
+            templateImgBinary = binary_closing(templateImgBinary)
+            # templateImgBinary = binary_dilation(templateImgBinary, iterations=4)
 
             adapcx, adapcy, adapR, adapImgBinary = self.getCenterAndR_adap()
             cx_list, cy_list = self.newCentroidFinder(adapImgBinary, 

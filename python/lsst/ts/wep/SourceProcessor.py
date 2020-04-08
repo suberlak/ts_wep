@@ -700,7 +700,7 @@ class SourceProcessor(object):
         else:
             return center
 
-    def doDeblending(self, blendedImg, allStarPosX, allStarPosY, magRatio):
+    def doDeblending(self, blendedImg, allStarPosX, allStarPosY, magRatio, sensorName, defocalState):
         """Do the deblending.
 
         It is noted that the algorithm now is only for one bright star and one
@@ -747,7 +747,8 @@ class SourceProcessor(object):
         imgDeblend, realcx, realcy = \
             self.blendedImageDecorator.deblendDonut((allStarPosX[0],
                                                      allStarPosY[0]),
-                                                     len(magRatio))
+                                                     len(magRatio),
+                                                     sensorName, defocalState)
 
         return imgDeblend, realcx, realcy
 

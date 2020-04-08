@@ -378,7 +378,9 @@ class WepController(object):
                         # get the postageImg fnameEnd : 
                         postFname = '_sensor-'+abbrevName+\
                                     '_star-'+str(starIdIdx)+\
-                                    '_id-'+str(starId)+'.txt'
+                                    '_id-'+str(starId)+\
+                                    '_posX-'+str(int(offsetX))+\
+                                    '_posY-'+str(int(offsetY)) + '.txt'
 
                         if postageImg: 
                             fname = preFname+'_singleSciImg'+postFname
@@ -404,7 +406,7 @@ class WepController(object):
                             imgDeblend, realcx, realcy = \
                                 self.sourProc.doDeblending(
                                     singleSciNeiImg, allStarPosX, allStarPosY,
-                                    magRatio)
+                                    magRatio, abbrevName, preFname)
                             # Update the magnitude ratio
                             magRatio = [1]
 
