@@ -1,20 +1,18 @@
-import os
 import numpy as np
 import pandas as pd
 
 from copy import deepcopy
-from lsst.ts.wep.deblend.DeblendUtils import DeblendUtils
-from lsst.ts.wep.ParamReader import ParamReader
-from lsst.ts.wep.Utility import getConfigDir
+from lsst.ts.wep.SourceProcessor import SourceProcessor
+
 from lsst.afw.image import ImageF
 from skimage.filters import threshold_otsu, threshold_triangle
 from sklearn.cluster import DBSCAN
 from scipy.spatial.distance import cdist
 
 
-class DonutDetector(DeblendUtils):
+class DonutDetector():
 
-    def __init__(self, raft, detector, defocalType, **kwargs):
+    def __init__(self, raft, detector, defocalType):
 
         """
         Parameters
@@ -27,16 +25,12 @@ class DonutDetector(DeblendUtils):
 
         defocal_type: str
             Defocal mode of the exposure: 'intra' or 'extra'
-
-        settingFileName: str, default='default.yaml'
-            Name of ts_wep policy file
         """
 
-        super().__init__(**kwargs)
-        self.template = self.createTemplateImage('%s_%s' % (raft, detector),
-                                                 defocalType)
-
-        return
+        self.sourProc = SourceProcessor()
+        sensorName = '%s_%s' % (raft, detector)
+        self.sourProc.config(sensorName)
+        self.template = self.sourProc.createTemplateImage(defocalType)
 
     def thresholdExpFAndTemp(self, exposure):
 
@@ -95,8 +89,9 @@ class DonutDetector(DeblendUtils):
         binary_template_image = ImageF(np.shape(self.template)[0],
                                        np.shape(self.template)[1])
         binary_template_image.array[:] = binary_template
-        new_exp = self.convolveExposureWithImage(binary_exp,
-                                                 binary_template_image)
+        new_exp = self.sourProc.blendedImageDecorator.convolveExposureWithImage(
+            binary_exp, binary_template_image
+        )
 
         # Set detection floor at 90% of max signal. Since we are using
         # binary images all signals should be around the same strength
@@ -123,7 +118,9 @@ class DonutDetector(DeblendUtils):
         # Don't need repeats of each pair
         dist_matrix_upper = np.triu(dist_matrix)
 
-        donut_size = 2.*self.settingFile.getSetting('starRadiusInPixel')
+        donut_size = 2.*self.sourProc.settingFile.getSetting(
+            'starRadiusInPixel'
+        )
         blended_pairs = np.array(np.where((dist_matrix_upper > 0.) &
                                           (dist_matrix_upper < donut_size))).T
         blended_cluster_centers = np.unique(blended_pairs.flatten())
@@ -166,8 +163,9 @@ class DonutDetector(DeblendUtils):
         template_imageF = ImageF(np.shape(self.template)[0],
                                  np.shape(self.template)[1])
         template_imageF.array[:] = self.template
-        rank_exp = self.convolveExposureWithImage(exposure,
-                                                  template_imageF)
+        rank_exp = self.sourProc.blendedImageDecorator.convolveExposureWithImage(
+            exposure, template_imageF
+        )
 
         unblended_df = donuts_df.query('blended == False')
 

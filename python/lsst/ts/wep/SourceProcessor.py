@@ -3,8 +3,10 @@ import numpy as np
 
 from lsst.ts.wep.deblend.BlendedImageDecorator import BlendedImageDecorator
 from lsst.ts.wep.Utility import readPhoSimSettingData, mapFilterRefToG, \
-    getConfigDir
+    getConfigDir, CamType, DefocalType
 from lsst.ts.wep.ParamReader import ParamReader
+from lsst.ts.wep.cwfs.Instrument import Instrument
+from lsst.ts.wep.cwfs.CompensableImage import CompensableImage
 
 
 class SourceProcessor(object):
@@ -25,7 +27,8 @@ class SourceProcessor(object):
         self.sensorName = ""
 
         configDir = getConfigDir()
-        settingFilePath = os.path.join(configDir, settingFileName)
+        self.configDir = configDir
+        settingFilePath = os.path.join(self.configDir, settingFileName)
         self.settingFile = ParamReader(filePath=settingFilePath)
         self.blendedImageDecorator = BlendedImageDecorator()
 
@@ -33,7 +36,9 @@ class SourceProcessor(object):
         self.sensorFocaPlaneInUm = dict()
         self.sensorDimList = dict()
         self.sensorEulerRot = dict()
-        self._readFocalPlane(configDir, focalPlaneFileName)
+        self._readFocalPlane(self.configDir, focalPlaneFileName)
+
+        self.templateType = self.settingFile.getSetting('templateType')
 
     def _readFocalPlane(self, folderPath, focalPlaneFileName):
         """Read the focal plane data used in PhoSim to get the ccd dimension
@@ -698,7 +703,8 @@ class SourceProcessor(object):
         else:
             return center
 
-    def doDeblending(self, blendedImg, allStarPosX, allStarPosY, magRatio, sensorName, defocalState):
+    def doDeblending(self, blendedImg, allStarPosX, allStarPosY, magRatio,
+                     defocalState):
         """Do the deblending.
 
         It is noted that the algorithm now is only for one bright star and one
@@ -742,13 +748,73 @@ class SourceProcessor(object):
         self.blendedImageDecorator.setImg(image=blendedImg)
 
         # Do the deblending
+        new_centroid = self.settingFile.getSetting('newCentroid')
+
+        if new_centroid is True:
+            new_template = self.createTemplateImage(self.sensorName,
+                                                    defocalState)
+        else:
+            new_template = None
+
         imgDeblend, realcx, realcy = \
             self.blendedImageDecorator.deblendDonut((allStarPosX[0],
                                                      allStarPosY[0]),
-                                                     len(magRatio),
-                                                     sensorName, defocalState)
+                                                    len(magRatio),
+                                                    self.sensorName,
+                                                    defocalState,
+                                                    new_template)
 
         return imgDeblend, realcx, realcy
+
+    def createTemplateImage(self, defocalState):
+
+        """
+        Create/grab donut template.
+
+        Parameters
+        ----------
+        sensorName : str
+            Abbreviated sensor name.
+        """
+
+        if self.templateType == 'phosim':
+            if defocalState == 'extra':
+                template_filename = os.path.join(self.configDir, 'deblend',
+                                                 'data',
+                                                 'extra_template-%s.txt' %
+                                                 self.sensorName)
+            elif defocalState == 'intra':
+                template_filename = os.path.join(self.configDir, 'deblend',
+                                                 'data',
+                                                 'intra_template-%s.txt' %
+                                                 self.sensorName)
+            template_array = np.genfromtxt(template_filename)
+            template_array[template_array < 50] = 0.
+
+        elif self.templateType == 'model':
+            # Load Instrument parameters
+            instDir = os.path.join(self.configDir, "cwfs", "instData")
+            dimOfDonutOnSensor = \
+                self.settingFile.getSetting('donutImgSizeInPixel')
+            inst = Instrument(instDir)
+            inst.config(CamType.LsstCam, dimOfDonutOnSensor)
+
+            # Create image for mask
+            img = CompensableImage()
+            if defocalState == 'extra':
+                img.defocalType = DefocalType.Extra
+            else:
+                img.defocalType = DefocalType.Intra
+
+            # define position of donut at center of current sensor
+            boundaryT = 0
+            maskScalingFactorLocal = 1
+            img.fieldX, img.fieldY = self.camXYtoFieldXY(2000., 2000.)
+            img.makeMask(inst, "offAxis", boundaryT, maskScalingFactorLocal)
+
+            template_array = img.cMask
+
+        return template_array
 
 
 if __name__ == "__main__":

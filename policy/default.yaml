@@ -76,5 +76,6 @@ numOfProc: 1
 # Use the new convolution based centroid algorithm
 newCentroid: True
 
-# Whic type of template to use with new centroid algorithms
-templateType: phosim
+# Which type of template to use with new centroid algorithms
+# 'phosim' or 'model'
+templateType: model

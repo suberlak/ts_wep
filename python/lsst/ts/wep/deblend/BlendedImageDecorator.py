@@ -1,32 +1,28 @@
-import os
 import numpy as np
 
 from scipy.ndimage.morphology import binary_opening, binary_closing, \
-    binary_erosion, binary_dilation
+    binary_erosion
 from scipy.ndimage.interpolation import shift
 from scipy.optimize import minimize_scalar
 
 from lsst.ts.wep.deblend.AdapThresImage import AdapThresImage
 from lsst.ts.wep.deblend.nelderMeadModify import nelderMeadModify
-from lsst.ts.wep.deblend.DeblendUtils import DeblendUtils
 
 from scipy.ndimage.measurements import center_of_mass
 from scipy.ndimage import convolve
 from scipy.spatial.distance import cdist
 from sklearn.cluster import KMeans
+from lsst.afw.image import ImageF
+from numpy.fft import fft2, ifft2
+from scipy.signal import fftconvolve, correlate2d
 
-from lsst.ts.wep.cwfs.Instrument import Instrument
-from lsst.ts.wep.cwfs.CompensableImage import CompensableImage
-from lsst.ts.wep.Utility import getModulePath, getConfigDir, CamType
 
+class BlendedImageDecorator():
 
-class BlendedImageDecorator(DeblendUtils):
-
-    def __init__(self, **kwargs):
+    def __init__(self):
         """Initialize the BlendedImageDecorator class."""
 
         self.__image = AdapThresImage()
-        super().__init__(**kwargs)
 
     def __getattr__(self, attributeName):
         """Use the functions and attributes hold by the object.
@@ -43,8 +39,6 @@ class BlendedImageDecorator(DeblendUtils):
         """
 
         return getattr(self.__image, attributeName)
-
-    from scipy import ndimage
 
     def newCentroidFinder(self, imageBinary, templateImgBinary,
                           n_donuts):
@@ -84,7 +78,8 @@ class BlendedImageDecorator(DeblendUtils):
 
         return cent_x, cent_y
 
-    def deblendDonut(self, iniGuessXY, n_donuts, sensor_name, defocal_type):
+    def deblendDonut(self, iniGuessXY, n_donuts, sensor_name,
+                     defocal_type, new_centroid):
         """
         Get the deblended donut image.
 
@@ -108,9 +103,6 @@ class BlendedImageDecorator(DeblendUtils):
 
         # Postion of centroid
 
-        # Get centroid finder version info
-        new_centroid = self.settingFile.getSetting('newCentroid')
-
         # Get the initial guess of brightest donut
         if new_centroid is False:
             centroidFind = self.getCentroidFind(sensor_name, defocal_type)
@@ -129,13 +121,14 @@ class BlendedImageDecorator(DeblendUtils):
             # Get the binary image by adaptive threshold
             adapcx, adapcy, adapR, adapImgBinary = self.getCenterAndR_adap()
         else:
-            templateArray = self.createTemplateImage(sensor_name, defocal_type)
+            templateArray = self.deblendUtils.createTemplateImage(sensor_name,
+                                                                  defocal_type)
+
             templateImage = AdapThresImage()
             templateImage.setImg(image=templateArray)
             templatecx, templatecy, templateR, templateImgBinary = \
                 templateImage.getCenterAndR_adap()
             templateImgBinary = binary_closing(templateImgBinary)
-            # templateImgBinary = binary_dilation(templateImgBinary, iterations=4)
 
             adapcx, adapcy, adapR, adapImgBinary = self.getCenterAndR_adap()
             cx_list, cy_list = self.newCentroidFinder(adapImgBinary,
@@ -184,16 +177,18 @@ class BlendedImageDecorator(DeblendUtils):
         # Calculate the shifts of x and y
         x0 = int(iniGuessXY[0] - realcx)
         y0 = int(iniGuessXY[1] - realcy)
-        if new_centroid is True:
+        if new_template is not None:
             neighbor_opt_array = np.array([y0, x0])
         else:
             neighbor_opt_array = np.array([x0, y0])
 
         xoptNeighbor = nelderMeadModify(self._funcResidue, neighbor_opt_array,
-                                        args=(imgBinary, resImgBinary), step=15)
+                                        args=(imgBinary, resImgBinary),
+                                        step=15)
 
         # Shift the main donut image to fitted position of neighboring star
-        fitImgBinary = shift(imgBinary, [int(xoptNeighbor[0][1]), int(xoptNeighbor[0][0])])
+        fitImgBinary = shift(imgBinary, [int(xoptNeighbor[0][1]),
+                                         int(xoptNeighbor[0][0])])
 
         # Handle the numerical error of shift. Regenerate a binary image.
         fitImgBinary[fitImgBinary > 0.5] = 1
@@ -213,7 +208,8 @@ class BlendedImageDecorator(DeblendUtils):
 
         # Calculate the magnitude ratio of image
         imgMainDonut = noSysErrImage*imgBinary
-        imgFit = shift(imgMainDonut, [int(xoptNeighbor[0][1]), int(xoptNeighbor[0][0])])
+        imgFit = shift(imgMainDonut, [int(xoptNeighbor[0][1]),
+                                      int(xoptNeighbor[0][0])])
 
         xoptMagNeighbor = minimize_scalar(
             self._funcMag, bounds=(0, 1), method="bounded",
@@ -222,7 +218,8 @@ class BlendedImageDecorator(DeblendUtils):
         imgDeblend = imgMainDonut - xoptMagNeighbor.x*imgFit*imgOverlapBinary
 
         # Repair the boundary of image
-        imgDeblend = self._repairBoundary(imgOverlapBinary, imgBinary, imgDeblend)
+        imgDeblend = self._repairBoundary(imgOverlapBinary, imgBinary,
+                                          imgDeblend)
 
         # Calculate the centroid position of donut
         realcy, realcx = center_of_mass(imgBinary)
@@ -362,6 +359,39 @@ class BlendedImageDecorator(DeblendUtils):
         delta = np.sum((fitImgBinary-resImgBinary)**2)
 
         return delta
+
+    def convolveExposureWithImage(self, exposure, kernelImage):
+
+        '''Convolve image and variance planes in an exposure with an image using FFT
+            Does not convolve mask. Returns new exposure'''
+
+        newExposure = exposure.clone()
+
+        image = self.convolveImageWithImage(newExposure.getImage(),
+                                            kernelImage)
+        variance = self.convolveImageWithImage(newExposure.getVariance(),
+                                               kernelImage)
+
+        newExposure.image = image
+        newExposure.variance = variance
+        return newExposure
+
+    def convolveImageWithImage(self, image, kernelImage, conv=True, fft=True):
+
+        '''Convolve/correlate an image with a kernel
+            Option to use an FFT or direct (slow)
+            Returns an image'''
+        if conv:
+            array = fftconvolve(image.getArray(), kernelImage.getArray(), mode='same')
+        else:
+            if fft:
+                array = np.roll(ifft2(fft2(kernelImage.getArray()).conj()*fft2(image.getArray())).real,
+                            (image.getArray().shape[0] - 1)//2, axis=(0, 1))
+            else:
+                array = correlate2d(image.getArray(), kernelImage.getArray(), mode='same')
+        newImage = ImageF(array.shape[1], array.shape[0])
+        newImage.array[:] = array
+        return newImage
 
 
 if __name__ == "__main__":
