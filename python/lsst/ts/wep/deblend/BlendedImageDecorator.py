@@ -8,11 +8,11 @@ from scipy.optimize import minimize_scalar
 
 from lsst.ts.wep.deblend.AdapThresImage import AdapThresImage
 from lsst.ts.wep.deblend.nelderMeadModify import nelderMeadModify
+from lsst.ts.wep.deblend.DeblendUtils import DeblendUtils
 
 from scipy.ndimage.measurements import center_of_mass
 from scipy.ndimage import convolve
 from scipy.spatial.distance import cdist
-from skimage.draw import circle
 from sklearn.cluster import KMeans
 
 from lsst.ts.wep.cwfs.Instrument import Instrument
@@ -20,13 +20,13 @@ from lsst.ts.wep.cwfs.CompensableImage import CompensableImage
 from lsst.ts.wep.Utility import getModulePath, getConfigDir, CamType
 
 
-class BlendedImageDecorator(object):
+class BlendedImageDecorator(DeblendUtils):
 
-    def __init__(self, new_centroid=False):
+    def __init__(self, **kwargs):
         """Initialize the BlendedImageDecorator class."""
 
         self.__image = AdapThresImage()
-        self.new_centroid = new_centroid
+        super().__init__(**kwargs)
 
     def __getattr__(self, attributeName):
         """Use the functions and attributes hold by the object.
@@ -77,56 +77,12 @@ class BlendedImageDecorator(object):
         cent_y = []
 
         for label_num in range(n_donuts):
-            nx_label, ny_label = np.unravel_index(ranked_convolve[labels == label_num][0], 
+            nx_label, ny_label = np.unravel_index(ranked_convolve[labels == label_num][0],
                                                   np.shape(imageBinary))
             cent_x.append(nx_label)
             cent_y.append(ny_label)
-        
+
         return cent_x, cent_y
-
-    # def createTemplateImage(self, template_width=151, boundaryT=9.1):
-    #     """
-    #     Create deblended donut template image for testing.
-
-    #     Parameters
-    #     ----------
-
-    #     Returns
-    #     -------
-    #     img.cMask: numpy.ndarray
-    #         Template donut array for convolution centroid finding
-    #     """
-    #     # Load Instrument parameters
-    #     instDir = os.path.join(getConfigDir(), "cwfs", "instData")
-    #     dimOfDonutOnSensor = template_width
-    #     inst = Instrument(instDir)
-    #     inst.config(CamType.LsstCam, dimOfDonutOnSensor)
-
-    #     #create image for mask
-    #     img = CompensableImage()
-
-    #     #define postion of dounut in degrees relative to center of field
-    #     maskScalingFactorLocal=1
-    #     img.fieldX=0. # 1.25
-    #     img.fieldY=0. # 1.15
-    #     img.makeMask(inst, "onAxis", boundaryT, maskScalingFactorLocal)
-                
-    #     return img.cMask
-
-    def createTemplateImage(self, sensor_name, defocal_type):
-
-        if defocal_type == 'extra':
-            template_filename = os.path.join(getConfigDir(), 'deblend', 
-                                             'data', 
-                                             'extra_template-%s.txt' % sensor_name)
-        elif defocal_type == 'intra':
-            template_filename = os.path.join(getConfigDir(), 'deblend', 
-                                             'data', 
-                                             'intra_template-%s.txt' % sensor_name)
-        template_array = np.genfromtxt(template_filename)
-        template_array[template_array < 50] = 0.
-
-        return template_array
 
     def deblendDonut(self, iniGuessXY, n_donuts, sensor_name, defocal_type):
         """
@@ -152,8 +108,11 @@ class BlendedImageDecorator(object):
 
         # Postion of centroid
 
+        # Get centroid finder version info
+        new_centroid = self.settingFile.getSetting('newCentroid')
+
         # Get the initial guess of brightest donut
-        if self.new_centroid is False:
+        if new_centroid is False:
             centroidFind = self.getCentroidFind(sensor_name, defocal_type)
             imgBinary = centroidFind.getImgBinary(self.getImg())
             realcx, realcy, realR = centroidFind.getCenterAndRfromImgBinary(
@@ -179,7 +138,7 @@ class BlendedImageDecorator(object):
             # templateImgBinary = binary_dilation(templateImgBinary, iterations=4)
 
             adapcx, adapcy, adapR, adapImgBinary = self.getCenterAndR_adap()
-            cx_list, cy_list = self.newCentroidFinder(adapImgBinary, 
+            cx_list, cy_list = self.newCentroidFinder(adapImgBinary,
                                                       templateImgBinary,
                                                       n_donuts)
             # Order the centroids to figure out which is neighbor star
@@ -189,7 +148,7 @@ class BlendedImageDecorator(object):
             # Update coords of neighbor star and bright star with centroid pos
             realcx = cx_list[iniGuess_dist_order[1]]
             realcy = cy_list[iniGuess_dist_order[1]]
-            iniGuessXY = [cx_list[iniGuess_dist_order[0]], 
+            iniGuessXY = [cx_list[iniGuess_dist_order[0]],
                           cy_list[iniGuess_dist_order[0]]]
 
             imgBinary = np.zeros(np.shape(adapImgBinary))
@@ -225,7 +184,7 @@ class BlendedImageDecorator(object):
         # Calculate the shifts of x and y
         x0 = int(iniGuessXY[0] - realcx)
         y0 = int(iniGuessXY[1] - realcy)
-        if self.new_centroid is True:
+        if new_centroid is True:
             neighbor_opt_array = np.array([y0, x0])
         else:
             neighbor_opt_array = np.array([x0, y0])

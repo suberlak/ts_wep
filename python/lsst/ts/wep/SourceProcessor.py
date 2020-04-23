@@ -27,9 +27,7 @@ class SourceProcessor(object):
         configDir = getConfigDir()
         settingFilePath = os.path.join(configDir, settingFileName)
         self.settingFile = ParamReader(filePath=settingFilePath)
-        self.blendedImageDecorator = BlendedImageDecorator(
-            self.settingFile.getSetting("newCentroid")
-        )
+        self.blendedImageDecorator = BlendedImageDecorator()
 
         self.sensorFocaPlaneInDeg = dict()
         self.sensorFocaPlaneInUm = dict()
