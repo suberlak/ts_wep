@@ -79,7 +79,7 @@ class BlendedImageDecorator():
         return cent_x, cent_y
 
     def deblendDonut(self, iniGuessXY, n_donuts, sensor_name,
-                     defocal_type, new_centroid):
+                     defocal_type, new_template):
         """
         Get the deblended donut image.
 
@@ -104,7 +104,7 @@ class BlendedImageDecorator():
         # Postion of centroid
 
         # Get the initial guess of brightest donut
-        if new_centroid is False:
+        if new_template is None:
             centroidFind = self.getCentroidFind(sensor_name, defocal_type)
             imgBinary = centroidFind.getImgBinary(self.getImg())
             realcx, realcy, realR = centroidFind.getCenterAndRfromImgBinary(
@@ -121,11 +121,8 @@ class BlendedImageDecorator():
             # Get the binary image by adaptive threshold
             adapcx, adapcy, adapR, adapImgBinary = self.getCenterAndR_adap()
         else:
-            templateArray = self.deblendUtils.createTemplateImage(sensor_name,
-                                                                  defocal_type)
-
             templateImage = AdapThresImage()
-            templateImage.setImg(image=templateArray)
+            templateImage.setImg(image=new_template)
             templatecx, templatecy, templateR, templateImgBinary = \
                 templateImage.getCenterAndR_adap()
             templateImgBinary = binary_closing(templateImgBinary)
