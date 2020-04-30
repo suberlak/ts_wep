@@ -92,6 +92,8 @@ class Instrument(object):
             return "lsst"
         elif (camType == CamType.ComCam):
             return "comcam"
+        elif (camType == CamType.AuxTel):
+            return "auxtel"
         else:
             raise ValueError("Camera type (%s) is not supported." % camType)
 
