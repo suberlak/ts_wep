@@ -340,6 +340,11 @@ class WEPCalculation(object):
             is None.
         postageImg : True/False - whether to save postage stamp images of donuts 
         postageImgDir : a directory where to save them 
+        lowMagnitude, highMagnitude : magnitude limits for stars used to calculate
+            wavefront errors. If none, the limits are read from ts/wep/bsc/Filter.py
+            file. This can be used to explore the dependence of WFS calculation 
+            on star magnitude in an input star catalog. 
+        
 
         Returns
         -------
