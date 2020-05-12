@@ -113,7 +113,7 @@ class SourceSelector(object):
         mjd = self.settingFile.getSetting("cameraMJD")
         self.camera.setObsMetaData(ra, dec, rotSkyPos, mjd=mjd)
 
-    def getTargetStar(self, offset=0):
+    def getTargetStar(self, offset=0, lowMagnitude=None, highMagnitude=None):
         """Get the target stars by querying the database.
 
         Parameters
@@ -136,7 +136,8 @@ class SourceSelector(object):
         """
 
         wavefrontSensors = self.camera.getWavefrontSensor()
-        lowMagnitude, highMagnitude = self.filter.getMagBoundary()
+        if (lowMagnitude is None ) or (highMagnitude is None):
+            lowMagnitude, highMagnitude = self.filter.getMagBoundary()
 
         # Map the reference filter to the G filter
         filterType = self.getFilter()
