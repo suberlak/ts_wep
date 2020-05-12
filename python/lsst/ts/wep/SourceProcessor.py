@@ -3,11 +3,7 @@ import numpy as np
 
 from lsst.ts.wep.deblend.DeblendDonutFactory import DeblendDonutFactory
 from lsst.ts.wep.Utility import readPhoSimSettingData, mapFilterRefToG, \
-<<<<<<< HEAD
-    getConfigDir, CamType, DefocalType
-=======
     getConfigDir, getDeblendDonutType
->>>>>>> master
 from lsst.ts.wep.ParamReader import ParamReader
 from lsst.ts.wep.cwfs.Instrument import Instrument
 from lsst.ts.wep.cwfs.CompensableImage import CompensableImage
@@ -762,27 +758,9 @@ class SourceProcessor(object):
             raise ValueError("Only one neighboring star allowed.")
 
         # Do the deblending
-<<<<<<< HEAD
-        new_centroid = self.settingFile.getSetting('newCentroid')
-
-        if new_centroid is True:
-            new_template = self.createTemplateImage(self.sensorName,
-                                                    defocalState)
-        else:
-            new_template = None
-
-        imgDeblend, realcx, realcy = \
-            self.blendedImageDecorator.deblendDonut((allStarPosX[0],
-                                                     allStarPosY[0]),
-                                                    len(magRatio),
-                                                    self.sensorName,
-                                                    defocalState,
-                                                    new_template)
-=======
         iniGuessXY = [(allStarPosX[0], allStarPosY[0])]
         imgDeblend, realcx, realcy = self.deblend.deblendDonut(blendedImg,
                                                                iniGuessXY)
->>>>>>> master
 
         return imgDeblend, realcx, realcy
 

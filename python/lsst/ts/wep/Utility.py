@@ -75,15 +75,9 @@ class FilterType(IntEnum):
 
 class CamType(IntEnum):
     LsstCam = 1
-<<<<<<< HEAD
-    LsstFamCam = 2
-    ComCam = 3
-    AuxTel = 4
-=======
     LsstFamCam = auto()
     ComCam = auto()
     AuxTel = auto()
->>>>>>> master
 
 
 class BscDbType(IntEnum):

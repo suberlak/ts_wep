@@ -93,11 +93,7 @@ class Instrument(object):
         elif (camType == CamType.ComCam):
             return "comcam"
         elif (camType == CamType.AuxTel):
-<<<<<<< HEAD
-            return "auxtel"
-=======
             return "auxTel"
->>>>>>> master
         else:
             raise ValueError("Camera type (%s) is not supported." % camType)
 
