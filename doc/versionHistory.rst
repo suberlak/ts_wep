@@ -6,6 +6,46 @@
 Version History
 ##################
 
+.. _lsst.ts.wep-1.4.1:
+
+-------------
+1.4.1
+-------------
+
+Add the function to recenter the donut image with the template. Add the instrument and test data of auxilirary telescope.
+
+.. _lsst.ts.wep-1.4.0:
+
+-------------
+1.4.0
+-------------
+
+Use the sims_w_2020_15. Use the factory pattern for deblend module.
+
+.. _lsst.ts.wep-1.3.9:
+
+-------------
+1.3.9
+-------------
+
+Use the sims_w_2020_14.
+
+.. _lsst.ts.wep-1.3.8:
+
+-------------
+1.3.8
+-------------
+
+Use the sims_w_2020_07.
+
+.. _lsst.ts.wep-1.3.7:
+
+-------------
+1.3.7
+-------------
+
+Use the sims_w_2020_06. Skip two tests in test_butlerWrapper.py and test_camIsrWrapper.py for the bugs in upstream. Feedback to DM team.
+
 .. _lsst.ts.wep-1.3.6:
 
 -------------

@@ -1,9 +1,13 @@
 import os
 import numpy as np
 
-from lsst.ts.wep.deblend.BlendedImageDecorator import BlendedImageDecorator
+from lsst.ts.wep.deblend.DeblendDonutFactory import DeblendDonutFactory
 from lsst.ts.wep.Utility import readPhoSimSettingData, mapFilterRefToG, \
+<<<<<<< HEAD
     getConfigDir, CamType, DefocalType
+=======
+    getConfigDir, getDeblendDonutType
+>>>>>>> master
 from lsst.ts.wep.ParamReader import ParamReader
 from lsst.ts.wep.cwfs.Instrument import Instrument
 from lsst.ts.wep.cwfs.CompensableImage import CompensableImage
@@ -39,6 +43,10 @@ class SourceProcessor(object):
         self._readFocalPlane(self.configDir, focalPlaneFileName)
 
         self.templateType = self.settingFile.getSetting('templateType')
+
+        # Deblending donut algorithm to use
+        deblendDonutType = self._getDeblendDonutTypeInSetting()
+        self.deblend = DeblendDonutFactory.createDeblendDonut(deblendDonutType)
 
     def _readFocalPlane(self, folderPath, focalPlaneFileName):
         """Read the focal plane data used in PhoSim to get the ccd dimension
@@ -147,6 +155,18 @@ class SourceProcessor(object):
             focalPlaneData[0] = str(tempX)
         elif (tempY is not None):
             focalPlaneData[1] = str(tempY)
+
+    def _getDeblendDonutTypeInSetting(self):
+        """Get the deblend donut type in the setting.
+
+        Returns
+        -------
+        enum 'DeblendDonutType'
+            Deblend donut type algorithm.
+        """
+
+        deblendDonutType = self.settingFile.getSetting("deblendDonutAlgo")
+        return getDeblendDonutType(deblendDonutType)
 
     def config(self, sensorName=None):
         """Do the configuration.
@@ -517,11 +537,8 @@ class SourceProcessor(object):
             Donut image.
         """
 
-        # Get the donut image from the file by the delegation
-        self.blendedImageDecorator.setImg(
-            imageFile=os.path.join(imageFolderPath, fileName))
-
-        return self.blendedImageDecorator.getImg().copy()
+        imageFilePath = os.path.join(imageFolderPath, fileName)
+        return np.loadtxt(imageFilePath)
 
     def _addDonutImage(self, donutImage, starX, starY, ccdImg):
         """Add the donut image to simulated CCD image frame.
@@ -744,10 +761,8 @@ class SourceProcessor(object):
         if (len(magRatio) != 2):
             raise ValueError("Only one neighboring star allowed.")
 
-        # Set the image for the deblending
-        self.blendedImageDecorator.setImg(image=blendedImg)
-
         # Do the deblending
+<<<<<<< HEAD
         new_centroid = self.settingFile.getSetting('newCentroid')
 
         if new_centroid is True:
@@ -763,6 +778,11 @@ class SourceProcessor(object):
                                                     self.sensorName,
                                                     defocalState,
                                                     new_template)
+=======
+        iniGuessXY = [(allStarPosX[0], allStarPosY[0])]
+        imgDeblend, realcx, realcy = self.deblend.deblendDonut(blendedImg,
+                                                               iniGuessXY)
+>>>>>>> master
 
         return imgDeblend, realcx, realcy
 

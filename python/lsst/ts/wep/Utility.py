@@ -2,19 +2,19 @@ import os
 import subprocess
 import re
 from scipy.ndimage.measurements import center_of_mass
-from enum import Enum
+from enum import IntEnum, auto
 
 from lsst.utils import getPackageDir
 
 
-class FilterType(Enum):
+class FilterType(IntEnum):
     U = 1
-    G = 2
-    R = 3
-    I = 4
-    Z = 5
-    Y = 6
-    REF = 7
+    G = auto()
+    R = auto()
+    I = auto()
+    Z = auto()
+    Y = auto()
+    REF = auto()
 
     @staticmethod
     def fromString(arg):
@@ -73,31 +73,41 @@ class FilterType(Enum):
         return filter2String[self]
 
 
-class CamType(Enum):
+class CamType(IntEnum):
     LsstCam = 1
+<<<<<<< HEAD
     LsstFamCam = 2
     ComCam = 3
     AuxTel = 4
+=======
+    LsstFamCam = auto()
+    ComCam = auto()
+    AuxTel = auto()
+>>>>>>> master
 
 
-class BscDbType(Enum):
+class BscDbType(IntEnum):
     LocalDb = 1
-    LocalDbForStarFile = 2
+    LocalDbForStarFile = auto()
 
 
-class DefocalType(Enum):
+class DefocalType(IntEnum):
     Intra = 1
-    Extra = 2
+    Extra = auto()
 
 
-class ImageType(Enum):
+class ImageType(IntEnum):
     Amp = 1
-    Eimg = 2
+    Eimg = auto()
 
 
-class CentroidFindType(Enum):
+class CentroidFindType(IntEnum):
     RandomWalk = 1
-    Otsu = 2
+    Otsu = auto()
+
+
+class DeblendDonutType(IntEnum):
+    Adapt = 1
 
 
 def getModulePath():
@@ -383,7 +393,7 @@ def mapFilterRefToG(filterType):
         Mapped filter type.
     """
 
-    if (filterType == FilterType.REF):
+    if filterType == FilterType.REF:
         return FilterType.G
     else:
         return filterType
@@ -408,9 +418,9 @@ def getBscDbType(bscDbType):
         The bscDb is not supported.
     """
 
-    if (bscDbType == "localDb"):
+    if bscDbType == "localDb":
         return BscDbType.LocalDb
-    elif (bscDbType == "file"):
+    elif bscDbType == "file":
         return BscDbType.LocalDbForStarFile
     else:
         raise ValueError("The bscDb (%s) is not supported." % bscDbType)
@@ -435,9 +445,9 @@ def getImageType(imageType):
         The image type is not supported.
     """
 
-    if (imageType == "amp"):
+    if imageType == "amp":
         return ImageType.Amp
-    elif (imageType == "eimage"):
+    elif imageType == "eimage":
         return ImageType.Eimg
     else:
         raise ValueError("The %s is not supported." % imageType)
@@ -462,12 +472,37 @@ def getCentroidFindType(centroidFindType):
         The centroid find type is not supported.
     """
 
-    if (centroidFindType == "randomWalk"):
+    if centroidFindType == "randomWalk":
         return CentroidFindType.RandomWalk
-    elif (centroidFindType == "otsu"):
+    elif centroidFindType == "otsu":
         return CentroidFindType.Otsu
     else:
         raise ValueError("The %s is not supported." % centroidFindType)
+
+
+def getDeblendDonutType(deblendDonutType):
+    """Get the deblend donut type.
+
+    Parameters
+    ----------
+    deblendDonutType : str
+        Deblend donut algorithm to use (adapt).
+
+    Returns
+    -------
+    enum 'DeblendDonutType'
+        Deblend donut type algorithm.
+
+    Raises
+    ------
+    ValueError
+        The deblend donut type is not supported.
+    """
+
+    if deblendDonutType == "adapt":
+        return DeblendDonutType.Adapt
+    else:
+        raise ValueError("The %s is not supported." % deblendDonutType)
 
 
 if __name__ == "__main__":
