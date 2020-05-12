@@ -326,7 +326,7 @@ class WEPCalculation(object):
         return self.rotSkyPos
 
     def calculateWavefrontErrors(self, rawExpData, extraRawExpData=None,postageImg=False,
-                                postageImgDir=None):
+                                postageImgDir=None,lowMagnitude=None, highMagnitude=None):
         """Calculate the wavefront errors.
 
         Parameters
@@ -379,7 +379,8 @@ class WEPCalculation(object):
         self.wepCntlr.setPostIsrCcdInputs(butlerRootPath)
 
         # Get the target stars map neighboring stars
-        neighborStarMap = self._getTargetStar()
+        neighborStarMap = self._getTargetStar(lowMagnitude=lowMagnitude, 
+                                              highMagnitude=highMagnitude)
 
         # Calculate the wavefront error
         intraObsIdList = rawExpData.getVisit()
@@ -496,7 +497,7 @@ class WEPCalculation(object):
         elif (imgType == ImageType.Eimg):
             return self.isrDir
 
-    def _getTargetStar(self):
+    def _getTargetStar(self,lowMagnitude=None, highMagnitude=None):
         """Get the target stars
 
         Returns
@@ -526,7 +527,8 @@ class WEPCalculation(object):
 
         camDimOffset = self.settingFile.getSetting("camDimOffset")
         if (bscDbType == BscDbType.LocalDb):
-            neighborStarMap = sourSelc.getTargetStar(offset=camDimOffset)[0]
+            neighborStarMap = sourSelc.getTargetStar(offset=camDimOffset,
+                lowMagnitude=lowMagnitude, highMagnitude=highMagnitude)[0]
         elif (bscDbType == BscDbType.LocalDbForStarFile):
             skyFile = self._assignSkyFile()
             neighborStarMap = sourSelc.getTargetStarByFile(
