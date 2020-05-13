@@ -30,8 +30,8 @@ class SourceProcessor(object):
         self.configDir = configDir
         settingFilePath = os.path.join(self.configDir, settingFileName)
         self.settingFile = ParamReader(filePath=settingFilePath)
-        self.blendedImageDecorator = BlendedImageDecorator()
-
+        #self.blendedImageDecorator = BlendedImageDecorator()
+        
         self.sensorFocaPlaneInDeg = dict()
         self.sensorFocaPlaneInUm = dict()
         self.sensorDimList = dict()
