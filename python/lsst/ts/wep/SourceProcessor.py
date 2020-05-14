@@ -29,7 +29,6 @@ class SourceProcessor(object):
         self.configDir = configDir
         settingFilePath = os.path.join(self.configDir, settingFileName)
         self.settingFile = ParamReader(filePath=settingFilePath)
-
         self.sensorFocaPlaneInDeg = dict()
         self.sensorFocaPlaneInUm = dict()
         self.sensorDimList = dict()
