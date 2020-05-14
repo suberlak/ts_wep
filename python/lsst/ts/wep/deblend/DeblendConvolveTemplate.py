@@ -116,8 +116,9 @@ class DeblendConvolveTemplate(DeblendAdapt):
 
         # Get centroid values
         n_donuts = len(iniGuessXY) + 1
-        cx_list, cy_list = self._centroidFind.getCenters(
-            adapImgBinary, templateImgBinary, n_donuts)
+        cx_list, cy_list = self._centroidFind.getCenterFromTemplateConv(
+            adapImgBinary, templateImgBinary, n_donuts
+        )
 
         # Order the centroids to figure out which is neighbor star
         centroid_dist = cdist(np.array(iniGuessXY),

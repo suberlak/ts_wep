@@ -10,8 +10,8 @@ class CentroidConvolveTemplate(CentroidRandomWalk):
     """CentroidDefault child class to get the centroid of donut by
     convolution."""
 
-    def getCenters(self, imageBinary, templateImgBinary,
-                   n_donuts):
+    def getCenterFromTemplateConv(self, imageBinary, templateImgBinary,
+                                  n_donuts):
         """Get the centers of the donuts in the binary image.
 
         Parameters
