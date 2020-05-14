@@ -27,7 +27,33 @@ class DeblendAdapt(DeblendDefault):
         # Initial guess of block size used in the adaptive threshold mothod
         self.blockSizeInit = 33
 
-    def deblendDonut(self, imgToDeblend, iniGuessXY):
+    def _getBinaryImages(self, imgToDeblend, iniGuessXY, **kwargs):
+
+        # Get the initial guess of the brightest donut
+        imgBinary = self._centroidFind.getImgBinary(imgToDeblend)
+        realcx, realcy, realR = self._centroidFind.getCenterAndRfromImgBinary(
+            imgBinary)
+
+        # Check the image quality
+        if (not realcx):
+            return np.array([]), realcx, realcy
+
+        # Remove the salt and pepper noise
+        imgBinary = binary_opening(imgBinary).astype(float)
+        imgBinary = binary_closing(imgBinary).astype(float)
+
+        # Get the binary image by the adaptive threshold method
+        imgBinaryAdapt = self._getImgBinaryAdapt(imgToDeblend)
+
+        # Calculate the shifts of x and y
+        # Only support to deblend single neighboring star at this moment
+        starXyNbr = iniGuessXY[0]
+        x0 = int(starXyNbr[0] - realcx)
+        y0 = int(starXyNbr[1] - realcy)
+
+        return imgBinary, imgBinaryAdapt, x0, y0
+
+    def deblendDonut(self, imgToDeblend, iniGuessXY, **kwargs):
         """Deblend the donut image.
 
         Parameters
@@ -57,21 +83,10 @@ class DeblendAdapt(DeblendDefault):
         if len(iniGuessXY) != 1:
             raise ValueError("Only support to deblend single neighboring star.")
 
-        # Get the initial guess of the brightest donut
-        imgBinary = self._centroidFind.getImgBinary(imgToDeblend)
-        realcx, realcy, realR = self._centroidFind.getCenterAndRfromImgBinary(
-            imgBinary)
-
-        # Check the image quality
-        if (not realcx):
-            return np.array([]), realcx, realcy
-
-        # Remove the salt and pepper noise
-        imgBinary = binary_opening(imgBinary).astype(float)
-        imgBinary = binary_closing(imgBinary).astype(float)
-
         # Get the binary image by the adaptive threshold method
-        imgBinaryAdapt = self._getImgBinaryAdapt(imgToDeblend)
+        imgBinary, imgBinaryAdapt, x0, y0 = self._getBinaryImages(
+            imgToDeblend, iniGuessXY, **kwargs
+        )
 
         # Calculate the system error by only taking the background signal
         bg1D = imgToDeblend.flatten()
@@ -93,13 +108,7 @@ class DeblendAdapt(DeblendDefault):
         # Remove the salt and pepper noise noise of resImgBinary
         resImgBinary = binary_opening(resImgBinary).astype(float)
 
-        # Calculate the shifts of x and y
-        # Only support to deblend single neighboring star at this moment
-        starXyNbr = iniGuessXY[0]
-        x0 = int(starXyNbr[0] - realcx)
-        y0 = int(starXyNbr[1] - realcy)
-
-        xoptNeighbor = nelderMeadModify(self._funcResidue, neighbor_opt_array,
+        xoptNeighbor = nelderMeadModify(self._funcResidue, np.array([x0, y0]),
                                         args=(imgBinary, resImgBinary),
                                         step=15)
 

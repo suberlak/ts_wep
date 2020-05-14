@@ -98,10 +98,12 @@ class ImageType(IntEnum):
 class CentroidFindType(IntEnum):
     RandomWalk = 1
     Otsu = auto()
+    ConvolveTemplate = auto()
 
 
 class DeblendDonutType(IntEnum):
     Adapt = 1
+    ConvolveTemplate = auto()
 
 
 def getModulePath():
@@ -470,6 +472,8 @@ def getCentroidFindType(centroidFindType):
         return CentroidFindType.RandomWalk
     elif centroidFindType == "otsu":
         return CentroidFindType.Otsu
+    elif(centroidFindType == "convolveTemplate"):
+        return CentroidFindType.ConvolveTemplate
     else:
         raise ValueError("The %s is not supported." % centroidFindType)
 
@@ -495,6 +499,8 @@ def getDeblendDonutType(deblendDonutType):
 
     if deblendDonutType == "adapt":
         return DeblendDonutType.Adapt
+    elif deblendDonutType == "convolveTemplate":
+        return DeblendDonutType.ConvolveTemplate
     else:
         raise ValueError("The %s is not supported." % deblendDonutType)
 

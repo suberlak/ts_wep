@@ -1,6 +1,7 @@
 from lsst.ts.wep.Utility import CentroidFindType
 from lsst.ts.wep.cwfs.CentroidRandomWalk import CentroidRandomWalk
 from lsst.ts.wep.cwfs.CentroidOtsu import CentroidOtsu
+from lsst.ts.wep.cwfs.CentroidConvolveTemplate import CentroidConvolveTemplate
 
 
 class CentroidFindFactory(object):
@@ -18,7 +19,7 @@ class CentroidFindFactory(object):
 
         Returns
         -------
-        CentroidRandomWalk, CentroidOtsu
+        CentroidRandomWalk, CentroidOtsu, CentroidConvolveTemplate
             Centroid find object.
 
         Raises
@@ -31,5 +32,7 @@ class CentroidFindFactory(object):
             return CentroidRandomWalk()
         elif (centroidFindType == CentroidFindType.Otsu):
             return CentroidOtsu()
+        elif (centroidFindType == CentroidFindType.ConvolveTemplate):
+            return CentroidConvolveTemplate()
         else:
             raise ValueError("The %s is not supported." % centroidFindType)

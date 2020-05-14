@@ -346,7 +346,7 @@ class WepController(object):
         for sensorName, nbrStar in neighborStarMap.items():
 
             # Get the abbraviated sensor name
-            # that's eg., R22_S20 ... 
+            # that's eg., R22_S20 ...
             abbrevName = abbrevDectectorName(sensorName)
 
             # Configure the source processor
@@ -375,14 +375,14 @@ class WepController(object):
                         # read the catalog starId :
                         starId = brightStarIdList[starIdIdx]
 
-                        # get the postageImg fnameEnd : 
+                        # get the postageImg fnameEnd :
                         postFname = '_sensor-'+abbrevName+\
                                     '_star-'+str(starIdIdx)+\
                                     '_id-'+str(starId)+\
                                     '_posX-'+str(int(offsetX))+\
                                     '_posY-'+str(int(offsetY)) + '.txt'
 
-                        if postageImg: 
+                        if postageImg:
                             fname = preFname+'_singleSciImg'+postFname
                             np.savetxt(postageImgDir+'/'+fname,singleSciNeiImg)
                             print('\nSaving postage stamp as %s'%fname)
@@ -406,7 +406,7 @@ class WepController(object):
                             imgDeblend, realcx, realcy = \
                                 self.sourProc.doDeblending(
                                     singleSciNeiImg, allStarPosX, allStarPosY,
-                                    magRatio, abbrevName, preFname)
+                                    magRatio, jj+1)
                             # Update the magnitude ratio
                             magRatio = [1]
 
@@ -419,7 +419,7 @@ class WepController(object):
                             x0 = np.floor(realcx - sizeInPix / 2).astype("int")
                             y0 = np.floor(realcy - sizeInPix / 2).astype("int")
 
-                            if postageImg:  # print image before resizing 
+                            if postageImg:  # print image before resizing
                                 fname = preFname+'_imgDeblend_full'+postFname
                                 np.savetxt(postageImgDir+'/'+fname,imgDeblend)
                                 print('Saving postage stamp image as %s'%fname)
@@ -427,7 +427,7 @@ class WepController(object):
                             imgDeblend = imgDeblend[y0:y0 + sizeInPix,
                                                     x0:x0 + sizeInPix]
 
-                            if postageImg:  # print image after resizing 
+                            if postageImg:  # print image after resizing
                                 fname = preFname+'_imgDeblend_resized'+postFname
                                 np.savetxt(postageImgDir+'/'+fname,imgDeblend)
                                 print('Saving postage stamp image as %s'%fname)
@@ -534,7 +534,7 @@ class WepController(object):
             Donut image map with calculated wavefront error.
         """
 
-        # initialize the storage array 
+        # initialize the storage array
         content = "# abbrevDetectorName\t focalPlane\t starId\t xpos\t ypos\n"
 
         for sensorName, donutList in donutMap.items():
@@ -576,20 +576,20 @@ class WepController(object):
                 intraImg = intraDonut.getIntraImg()
                 extraImg = extraDonut.getExtraImg()
 
-                
-                print('\n sensorName ', sensorName, 
+
+                print('\n sensorName ', sensorName,
                       ' abbrevDetectorName ',abbrevDectectorName(sensorName),
-                      ' starId=',intraDonut.getStarId(), 
+                      ' starId=',intraDonut.getStarId(),
                       ' donut px pos = ', intraDonut.getPixelPos()
                       )
-        
-                content += "%s\t  %s\t %d\t %4.6f\t %4.6f\n"%(abbrevDectectorName(sensorName), 'intra', 
+
+                content += "%s\t  %s\t %d\t %4.6f\t %4.6f\n"%(abbrevDectectorName(sensorName), 'intra',
                                                                     intraDonut.getStarId(),
                                                                     intraDonut.getPixelPos()[0],
                                                                     intraDonut.getPixelPos()[1]
                                                                    )
 
-                content += "%s\t  %s\t %d\t %4.6f\t %4.6f\n"%(abbrevDectectorName(sensorName), 'extra', 
+                content += "%s\t  %s\t %d\t %4.6f\t %4.6f\n"%(abbrevDectectorName(sensorName), 'extra',
                                                                     extraDonut.getStarId(),
                                                                     extraDonut.getPixelPos()[0],
                                                                     extraDonut.getPixelPos()[1]
@@ -606,7 +606,7 @@ class WepController(object):
         # Write info about donuts to a file
         fname = 'donutStarsExtraIntra.txt'
         outputFilePath = postageImgDir + fname
-        
+
         fid = open(outputFilePath, "w")
         fid.write(content)
         fid.close()

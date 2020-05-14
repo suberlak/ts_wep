@@ -1,5 +1,6 @@
 from lsst.ts.wep.Utility import DeblendDonutType
 from lsst.ts.wep.deblend.DeblendAdapt import DeblendAdapt
+from lsst.ts.wep.deblend.DeblendConvolveTemplate import DeblendConvolveTemplate
 
 
 class DeblendDonutFactory(object):
@@ -28,5 +29,7 @@ class DeblendDonutFactory(object):
 
         if (deblendDonutType == DeblendDonutType.Adapt):
             return DeblendAdapt()
+        elif (deblendDonutType == DeblendDonutType.ConvolveTemplate):
+            return DeblendConvolveTemplate()
         else:
             raise ValueError("The %s is not supported." % deblendDonutType)

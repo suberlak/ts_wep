@@ -68,17 +68,14 @@ camDimOffset: 0
 # algorithm yet)
 doDeblending: True
 
-# Deblending donut algorithm to use.
+# Deblending donut algorithm to use. ("adapt" or "convolveTemplate")
 deblendDonutAlgo: adapt
+
+# Which type of template to use with new centroid algorithms
+# 'phosim' or 'model'
+templateType: model
 
 # Number of processor for the parallel calculation (should be >=1)
 # This is just a placeholder at this moment
 # This will begin to work when the super task is implemented
 numOfProc: 1
-
-# Use the new convolution based centroid algorithm
-newCentroid: True
-
-# Which type of template to use with new centroid algorithms
-# 'phosim' or 'model'
-templateType: model
