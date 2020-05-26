@@ -11,7 +11,8 @@ pixelToArcsec: 0.2
 # Bright star catalog (BSC) database type ("localDb" or "file")
 # localDb: Use the local database (not support yet)
 # file: Use the sky file
-bscDbType: file
+# image: Use the image to get donuts
+bscDbType: image
 
 # Default BSC database path relative to the root of module
 defaultBscPath: tests/testData/bsc.db3

@@ -1,16 +1,13 @@
-import os
 import numpy as np
 
 from scipy.ndimage.morphology import binary_closing
 from scipy.ndimage.interpolation import shift
 from scipy.spatial.distance import cdist
 
-from lsst.ts.wep.Utility import CentroidFindType, DefocalType, getConfigDir, \
-    CamType
+from lsst.ts.wep.Utility import CentroidFindType
 from lsst.ts.wep.cwfs.CentroidFindFactory import CentroidFindFactory
 from lsst.ts.wep.deblend.DeblendAdapt import DeblendAdapt
-from lsst.ts.wep.cwfs.Instrument import Instrument
-from lsst.ts.wep.cwfs.CompensableImage import CompensableImage
+from lsst.ts.wep.cwfs.TemplateUtils import createTemplateImage
 
 
 class DeblendConvolveTemplate(DeblendAdapt):
@@ -22,55 +19,6 @@ class DeblendConvolveTemplate(DeblendAdapt):
 
         self._centroidFind = CentroidFindFactory.createCentroidFind(
             CentroidFindType.ConvolveTemplate)
-
-    def createTemplateImage(self, defocalState, sensorName, iniFieldXY,
-                            templateType, donutImgSize):
-
-        """
-        Create/grab donut template.
-
-        Parameters
-        ----------
-        sensorName : str
-            Abbreviated sensor name.
-        """
-
-        configDir = getConfigDir()
-
-        if templateType == 'phosim':
-            if defocalState == DefocalType.Extra:
-                template_filename = os.path.join(configDir, 'deblend',
-                                                 'data',
-                                                 'extra_template-%s.txt' %
-                                                 sensorName)
-            elif defocalState == DefocalType.Intra:
-                template_filename = os.path.join(configDir, 'deblend',
-                                                 'data',
-                                                 'intra_template-%s.txt' %
-                                                 sensorName)
-            template_array = np.genfromtxt(template_filename)
-            template_array[template_array < 50] = 0.
-
-        elif templateType == 'model':
-            # Load Instrument parameters
-            instDir = os.path.join(configDir, "cwfs", "instData")
-            dimOfDonutOnSensor = donutImgSize
-            inst = Instrument(instDir)
-            inst.config(CamType.LsstCam, dimOfDonutOnSensor)
-
-            # Create image for mask
-            img = CompensableImage()
-            img.defocalType = defocalState
-
-            # define position of donut at center of current sensor
-            boundaryT = 0
-            maskScalingFactorLocal = 1
-            img.fieldX, img.fieldY = iniFieldXY[0]
-            img.makeMask(inst, "offAxis", boundaryT, maskScalingFactorLocal)
-
-            template_array = img.cMask
-
-        return template_array
 
     def _getBinaryImages(self, imgToDeblend, iniGuessXY, defocalState=1,
                          sensorName=None, iniFieldXY=[(0., 0.)],
@@ -105,9 +53,9 @@ class DeblendConvolveTemplate(DeblendAdapt):
             raise ValueError("Need to specify sensor.")
 
         # Get template and appropriate binary images
-        templateImg = self.createTemplateImage(defocalState, sensorName,
-                                               iniFieldXY, templateType,
-                                               donutImgSize)
+        templateImg = createTemplateImage(defocalState, sensorName,
+                                          iniFieldXY, templateType,
+                                          donutImgSize)
         templateImgBinary = self._getImgBinaryAdapt(templateImg)
         templateImgBinary = binary_closing(templateImgBinary)
         templatecx, templatecy, templateR = \

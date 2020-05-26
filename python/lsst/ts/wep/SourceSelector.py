@@ -4,6 +4,7 @@ from lsst.ts.wep.bsc.Filter import Filter
 from lsst.ts.wep.bsc.CamFactory import CamFactory
 from lsst.ts.wep.bsc.DatabaseFactory import DatabaseFactory
 from lsst.ts.wep.bsc.LocalDatabaseForStarFile import LocalDatabaseForStarFile
+from lsst.ts.wep.bsc.LocalDatabaseFromImage import LocalDatabaseFromImage
 from lsst.ts.wep.Utility import mapFilterRefToG, getConfigDir
 from lsst.ts.wep.ParamReader import ParamReader
 
@@ -251,6 +252,30 @@ class SourceSelector(object):
         # Write the sky data into the temporary table
         self.db.createTable(mappedFilterType)
         self.db.insertDataByFile(skyFilePath, mappedFilterType, skiprows=1)
+        neighborStarMap, starMap, wavefrontSensors = self.getTargetStar(offset=offset)
+
+        # Delete the table
+        self.db.deleteTable(mappedFilterType)
+
+        return neighborStarMap, starMap, wavefrontSensors
+
+    def getTargetStarFromImage(self, butlerRootPath, visitList, defocalState,
+                               offset=0):
+
+        # TODO: Uncomment when done debugging
+        if (not isinstance(self.db, LocalDatabaseFromImage)):
+            raise TypeError("The database type is incorrect.")
+
+        filterType = self.getFilter()
+        mappedFilterType = mapFilterRefToG(filterType)
+        wavefrontSensors = self.camera.getWavefrontSensor()
+
+        self.db.createTable(mappedFilterType)
+
+        self.db.insertDataFromImage(butlerRootPath, self.settingFile,
+                                    visitList, defocalState,
+                                    mappedFilterType, wavefrontSensors,
+                                    self.camera, skiprows=1)
         neighborStarMap, starMap, wavefrontSensors = self.getTargetStar(offset=offset)
 
         # Delete the table
