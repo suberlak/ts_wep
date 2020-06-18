@@ -262,7 +262,6 @@ class SourceSelector(object):
     def getTargetStarFromImage(self, butlerRootPath, visitList, defocalState,
                                offset=0):
 
-        # TODO: Uncomment when done debugging
         if (not isinstance(self.db, LocalDatabaseFromImage)):
             raise TypeError("The database type is incorrect.")
 

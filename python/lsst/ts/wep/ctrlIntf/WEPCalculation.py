@@ -3,7 +3,7 @@ import warnings
 
 from lsst.ts.wep.Utility import getModulePath, getConfigDir, BscDbType, \
     FilterType, abbrevDectectorName, getBscDbType, getImageType, \
-    getCentroidFindType, ImageType
+    getCentroidFindType, ImageType, DefocalType
 from lsst.ts.wep.CamDataCollector import CamDataCollector
 from lsst.ts.wep.CamIsrWrapper import CamIsrWrapper
 from lsst.ts.wep.SourceProcessor import SourceProcessor
@@ -387,7 +387,8 @@ class WEPCalculation(object):
         intraObsIdList = rawExpData.getVisit()
 
         # Get the target stars map neighboring stars
-        neighborStarMap = self._getTargetStar(intraObsIdList, 'intra',
+        neighborStarMap = self._getTargetStar(intraObsIdList,
+                                              DefocalType.Intra,
                                               lowMagnitude=lowMagnitude,
                                               highMagnitude=highMagnitude)
 

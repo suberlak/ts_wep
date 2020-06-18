@@ -76,6 +76,11 @@ deblendDonutAlgo: adapt
 # 'phosim' or 'model'
 templateType: model
 
+# If using the image to construct donut database
+# This is the minimum distance two donut centers need to be to
+# be tagged as unblended (in pixels)
+minUnblendedDistance: 160
+
 # Number of processor for the parallel calculation (should be >=1)
 # This is just a placeholder at this moment
 # This will begin to work when the super task is implemented

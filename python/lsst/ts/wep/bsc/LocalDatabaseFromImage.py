@@ -2,7 +2,6 @@ import lsst.daf.persistence as dafPersist
 from lsst.ts.wep.bsc.DonutDetector import DonutDetector
 from lsst.ts.wep.bsc.LocalDatabaseForStarFile import LocalDatabaseForStarFile
 from lsst.ts.wep.cwfs.TemplateUtils import createTemplateImage
-from lsst.ts.wep.ParamReader import ParamReader
 
 
 class LocalDatabaseFromImage(LocalDatabaseForStarFile):
@@ -17,7 +16,7 @@ class LocalDatabaseFromImage(LocalDatabaseForStarFile):
 
         templateType = settingFileInst.getSetting("templateType")
         donutImgSize = settingFileInst.getSetting("donutImgSizeInPixel")
-        overlapDistance = 2.*settingFileInst.getSetting("starRadiusInPixel")
+        overlapDistance = settingFileInst.getSetting("minUnblendedDistance")
         skyDf = self.identifyDonuts(butlerRootPath, visitList, filterType,
                                     defocalState, wavefrontSensors, camera,
                                     templateType, donutImgSize,
@@ -50,19 +49,31 @@ class LocalDatabaseFromImage(LocalDatabaseForStarFile):
                        'raftName': raft, 'detectorName': sensor}
             print(data_id)
 
+            # TODO: Rename this to reflect this is postISR not raw image.
             raw = butler.get('postISRCCD', **data_id)
             template = createTemplateImage(defocalState,
                                            detector, [[2000., 2000.]],
                                            templateType, donutImgSize)
             donut_detect = DonutDetector(template)
             donut_df = donut_detect.detectDonuts(raw, overlapDistance)
+
             ranked_unblended_df = donut_detect.rankUnblendedByFlux(donut_df,
                                                                    raw)
             ranked_unblended_df = ranked_unblended_df.reset_index(drop=True)
 
+            # Make coordinate change appropriate to sourProc.dmXY2CamXY
+            # FIXME: This is a temporary workaround
+            # Transpose because wepcntl. _transImgDmCoorToCamCoor
+            dimY, dimX = list(raw.getDimensions())
+            pixelCamX = ranked_unblended_df['x_center'].values
+            pixelCamY = dimX - ranked_unblended_df['y_center'].values
+            ranked_unblended_df['x_center'] = pixelCamX
+            ranked_unblended_df['y_center'] = pixelCamY
+
             ra, dec = camera._wcs.raDecFromPixelCoords(
                 ranked_unblended_df['x_center'].values,
                 ranked_unblended_df['y_center'].values,
+                # pixelCamX, pixelCamY,
                 detector, epoch=2000.0, includeDistortion=True
             )
 
@@ -76,6 +87,7 @@ class LocalDatabaseFromImage(LocalDatabaseForStarFile):
                     ranked_unblended_df)
 
         full_unblended_df = full_unblended_df.reset_index(drop=True)
+
         # FIXME: Actually estimate magnitude
         full_unblended_df['mag'] = 15.
 

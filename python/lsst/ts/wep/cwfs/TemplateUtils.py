@@ -1,7 +1,7 @@
 import os
 import numpy as np
 from lsst.ts.wep.Utility import DefocalType, getConfigDir, \
-    CamType
+    CamType, abbrevDectectorName
 from lsst.ts.wep.cwfs.Instrument import Instrument
 from lsst.ts.wep.cwfs.CompensableImage import CompensableImage
 
@@ -25,12 +25,12 @@ def createTemplateImage(defocalState, sensorName, iniFieldXY,
             template_filename = os.path.join(configDir, 'deblend',
                                              'data',
                                              'extra_template-%s.txt' %
-                                             sensorName)
+                                             abbrevDectectorName(sensorName))
         elif defocalState == DefocalType.Intra:
             template_filename = os.path.join(configDir, 'deblend',
                                              'data',
                                              'intra_template-%s.txt' %
-                                             sensorName)
+                                             abbrevDectectorName(sensorName))
         template_array = np.genfromtxt(template_filename)
         template_array[template_array < 50] = 0.
 
