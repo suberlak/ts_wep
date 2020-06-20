@@ -7,7 +7,6 @@ from lsst.ts.wep.Utility import readPhoSimSettingData, mapFilterRefToG, \
 from lsst.ts.wep.ParamReader import ParamReader
 
 
-
 class SourceProcessor(object):
 
     def __init__(self, settingFileName="default.yaml",
@@ -38,7 +37,7 @@ class SourceProcessor(object):
         # Deblending donut algorithm to use
         deblendDonutType = self._getDeblendDonutTypeInSetting()
         self.deblend = DeblendDonutFactory.createDeblendDonut(deblendDonutType)
-        self.templateType = self.settingFile.getSetting('templateType')
+        self.deblendTemplateType = self.settingFile.getSetting('deblendTemplateType')
 
     def _readFocalPlane(self, folderPath, focalPlaneFileName):
         """Read the focal plane data used in PhoSim to get the ccd dimension
@@ -762,7 +761,7 @@ class SourceProcessor(object):
         imgDeblend, realcx, realcy = self.deblend.deblendDonut(
             blendedImg, iniGuessXY, defocalType=defocalType,
             sensorName=self.sensorName, iniFieldXY=iniFieldXY,
-            templateType=self.templateType,
+            templateType=self.deblendTemplateType,
             donutImgSize=self.settingFile.getSetting('donutImgSizeInPixel')
         )
 

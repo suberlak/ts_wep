@@ -25,12 +25,12 @@ def createTemplateImage(defocalState, sensorName, iniFieldXY,
             template_filename = os.path.join(configDir, 'deblend',
                                              'data',
                                              'extra_template-%s.txt' %
-                                             abbrevDectectorName(sensorName))
+                                             sensorName)
         elif defocalState == DefocalType.Intra:
             template_filename = os.path.join(configDir, 'deblend',
                                              'data',
                                              'intra_template-%s.txt' %
-                                             abbrevDectectorName(sensorName))
+                                             sensorName)
         template_array = np.genfromtxt(template_filename)
         template_array[template_array < 50] = 0.
 
@@ -52,5 +52,19 @@ def createTemplateImage(defocalState, sensorName, iniFieldXY,
         img.makeMask(inst, "offAxis", boundaryT, maskScalingFactorLocal)
 
         template_array = img.cMask
+
+    elif templateType == 'isolatedDonutFromImage':
+        if defocalState == DefocalType.Extra:
+            template_filename = os.path.join(configDir, 'deblend',
+                                             'data', 'isolatedDonutTemplate',
+                                             'extra_template-%s.dat' %
+                                             sensorName)
+        elif defocalState == DefocalType.Intra:
+            template_filename = os.path.join(configDir, 'deblend',
+                                             'data', 'isolatedDonutTemplate',
+                                             'intra_template-%s.dat' %
+                                             sensorName)
+        template_array = np.genfromtxt(template_filename)
+        template_array[template_array < 0] = 0.
 
     return template_array

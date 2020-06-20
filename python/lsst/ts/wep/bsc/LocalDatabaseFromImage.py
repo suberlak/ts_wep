@@ -14,12 +14,12 @@ class LocalDatabaseFromImage(LocalDatabaseForStarFile):
                             skiprows=1, keepFile=True,
                             fileOut='foundDonuts.txt'):
 
-        templateType = settingFileInst.getSetting("templateType")
+        centroidTemplateType = settingFileInst.getSetting("centroidTemplateType")
         donutImgSize = settingFileInst.getSetting("donutImgSizeInPixel")
         overlapDistance = settingFileInst.getSetting("minUnblendedDistance")
         skyDf = self.identifyDonuts(butlerRootPath, visitList, filterType,
                                     defocalState, wavefrontSensors, camera,
-                                    templateType, donutImgSize,
+                                    centroidTemplateType, donutImgSize,
                                     overlapDistance)
         self.writeSkyFile(skyDf, fileOut)
         self.insertDataByFile(fileOut, filterType, skiprows=1)

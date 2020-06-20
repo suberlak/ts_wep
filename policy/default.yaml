@@ -70,16 +70,22 @@ camDimOffset: 0
 doDeblending: True
 
 # Deblending donut algorithm to use. ("adapt" or "convolveTemplate")
-deblendDonutAlgo: adapt
+deblendDonutAlgo: convolveTemplate
 
 # Which type of template to use with new centroid algorithms
 # 'phosim' or 'model'
-templateType: model
+centroidTemplateType: model
+
+# Set to use isolated donut in image for deblending if possible
+# Separate from command above because won't have an isolated template
+# for initial centroiding
+# Can be 'phosim', 'model', or 'isolatedDonutFromImage'
+deblendTemplateType: isolatedDonutFromImage
 
 # If using the image to construct donut database
 # This is the minimum distance two donut centers need to be to
 # be tagged as unblended (in pixels)
-minUnblendedDistance: 160
+minUnblendedDistance: 60
 
 # Number of processor for the parallel calculation (should be >=1)
 # This is just a placeholder at this moment

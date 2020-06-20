@@ -402,7 +402,8 @@ class WEPCalculation(object):
             extraObsId = extraObsIdList[0]
             obsIdList = [intraObsId, extraObsId]
 
-        donutMap = self._calcWfErr(neighborStarMap, obsIdList,postageImg,postageImgDir)
+        donutMap = self._calcWfErr(neighborStarMap, obsIdList,
+                                   postageImg, postageImgDir)
 
         listOfWfErr = self._populateListOfSensorWavefrontData(donutMap)
 

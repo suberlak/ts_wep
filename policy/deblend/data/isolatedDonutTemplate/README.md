@@ -1,0 +1,1 @@
+Folder for storing donut templates derived from the image.
