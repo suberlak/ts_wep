@@ -349,7 +349,8 @@ class WepController(object):
                                            'deblend', 'data',
                                            'isolatedDonutTemplate')
         for fileName in os.listdir(detectorTemplateDir):
-            os.unlink(os.path.join(detectorTemplateDir, fileName))
+            if fileName.endswith('.dat'):
+                os.unlink(os.path.join(detectorTemplateDir, fileName))
 
         donutMap = dict()
         for sensorName, nbrStar in neighborStarMap.items():
