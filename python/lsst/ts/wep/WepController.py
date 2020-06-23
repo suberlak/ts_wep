@@ -1,11 +1,12 @@
 import re
+import os
 import numpy as np
 
 from lsst.ts.wep.ButlerWrapper import ButlerWrapper
 from lsst.ts.wep.DefocalImage import DefocalImage
 from lsst.ts.wep.DonutImage import DonutImage
 from lsst.ts.wep.Utility import abbrevDectectorName, searchDonutPos, \
-    DefocalType, ImageType
+    DefocalType, ImageType, getModulePath
 
 
 class WepController(object):
@@ -315,6 +316,7 @@ class WepController(object):
 
     def getDonutMap(self, neighborStarMap, wfsImgMap, filterType,
                     doDeblending=False, postageImg=False, postageImgDir=None):
+
         """Get the donut map on each wavefront sensor (WFS).
 
         Parameters
@@ -342,6 +344,14 @@ class WepController(object):
         if postageImg:
             print('Saving postage stamp images in %s'%postageImgDir)
 
+        # Delete old templates
+        detectorTemplateDir = os.path.join(getModulePath(), 'policy',
+                                           'deblend', 'data',
+                                           'isolatedDonutTemplate')
+        for fileName in os.listdir(detectorTemplateDir):
+            if fileName.endswith('.dat'):
+                os.unlink(os.path.join(detectorTemplateDir, fileName))
+
         donutMap = dict()
         for sensorName, nbrStar in neighborStarMap.items():
 
@@ -355,6 +365,34 @@ class WepController(object):
             # Get the defocal images: [intra, extra]
             defocalImgList = [wfsImgMap[sensorName].getIntraImg(),
                               wfsImgMap[sensorName].getExtraImg()]
+
+            # Get deblending template from image
+            detectorTemplateExists = False
+            for starIdIdx, nbrStarInfo in list(enumerate(nbrStar.starId.items())):
+                if detectorTemplateExists is True:
+                    break
+                starId, neighStars = nbrStarInfo
+                if len(neighStars) == 0:
+                    for ccdImg, imgType in zip(defocalImgList,['intra','extra']):
+                        # Get Template Image
+                        singleTargetImage = self.sourProc.getSingleTargetImage(ccdImg,
+                            nbrStar, starIdIdx, filterType)
+                        templateImage = singleTargetImage[0]
+
+                        # Trim Image
+                        imageSizeX, imageSizeY = np.shape(templateImage)
+                        sizeInPix = self.wfEsti.getSizeInPix()
+                        cutPixX = int((imageSizeX - sizeInPix)/2)
+                        cutPixY = int((imageSizeY - sizeInPix)/2)
+                        templateImage = templateImage[cutPixX:-cutPixX, cutPixY:-cutPixY]
+
+                        # Save Image
+                        templateFileName = os.path.join(detectorTemplateDir,
+                                                        '%s_template-%s.dat' %
+                                                        (imgType, abbrevName))
+                        np.savetxt(templateFileName, templateImage)
+                    detectorTemplateExists = True
+
 
             # Get the bright star id list on specific sensor
             brightStarIdList = list(nbrStar.getId())
@@ -395,7 +433,12 @@ class WepController(object):
                         if (len(magRatio) == 1) or (not doDeblending):
                             imgDeblend = singleSciNeiImg
 
-                            if (len(magRatio) == 1):
+                            # If bscDbType is 'image' we have already found
+                            # donut centers in image with convolution
+                            # Shouldn't have to refind centers on image
+                            db_type = self.sourSelc.settingFile.getSetting('bscDbType')
+                            if ((len(magRatio) == 1) and
+                                    (db_type != 'image')):
                                 realcx, realcy = searchDonutPos(imgDeblend)
                             else:
                                 realcx = allStarPosX[-1]

@@ -3,7 +3,7 @@ import warnings
 
 from lsst.ts.wep.Utility import getModulePath, getConfigDir, BscDbType, \
     FilterType, abbrevDectectorName, getBscDbType, getImageType, \
-    getCentroidFindType, ImageType
+    getCentroidFindType, ImageType, DefocalType
 from lsst.ts.wep.CamDataCollector import CamDataCollector
 from lsst.ts.wep.CamIsrWrapper import CamIsrWrapper
 from lsst.ts.wep.SourceProcessor import SourceProcessor
@@ -339,13 +339,13 @@ class WEPCalculation(object):
         extraRawExpData : RawExpData, optional
             This is the extra-focal raw exposure data if not None. (the default
             is None.
-        postageImg : True/False - whether to save postage stamp images of donuts 
-        postageImgDir : a directory where to save them 
+        postageImg : True/False - whether to save postage stamp images of donuts
+        postageImgDir : a directory where to save them
         lowMagnitude, highMagnitude : magnitude limits for stars used to calculate
             wavefront errors. If none, the limits are read from ts/wep/bsc/Filter.py
-            file. This can be used to explore the dependence of WFS calculation 
-            on star magnitude in an input star catalog. 
-        
+            file. This can be used to explore the dependence of WFS calculation
+            on star magnitude in an input star catalog.
+
 
         Returns
         -------
@@ -384,12 +384,17 @@ class WEPCalculation(object):
         butlerRootPath = self._getButlerRootPath()
         self.wepCntlr.setPostIsrCcdInputs(butlerRootPath)
 
+        # Get visit list
+        intraObsIdList = rawExpData.getVisit()
+
         # Get the target stars map neighboring stars
-        neighborStarMap = self._getTargetStar(lowMagnitude=lowMagnitude, 
+        neighborStarMap = self._getTargetStar(intraObsIdList,
+                                              DefocalType.Intra,
+                                              lowMagnitude=lowMagnitude,
                                               highMagnitude=highMagnitude)
 
         # Calculate the wavefront error
-        intraObsIdList = rawExpData.getVisit()
+
         intraObsId = intraObsIdList[0]
         if (extraRawExpData is None):
             obsIdList = [intraObsId]
@@ -398,7 +403,8 @@ class WEPCalculation(object):
             extraObsId = extraObsIdList[0]
             obsIdList = [intraObsId, extraObsId]
 
-        donutMap = self._calcWfErr(neighborStarMap, obsIdList,postageImg,postageImgDir)
+        donutMap = self._calcWfErr(neighborStarMap, obsIdList,
+                                   postageImg, postageImgDir)
 
         listOfWfErr = self._populateListOfSensorWavefrontData(donutMap,sensorNameToIdFileName)
 
@@ -503,7 +509,7 @@ class WEPCalculation(object):
         elif (imgType == ImageType.Eimg):
             return self.isrDir
 
-    def _getTargetStar(self,lowMagnitude=None, highMagnitude=None):
+    def _getTargetStar(self, visitList, defocalState, lowMagnitude=None, highMagnitude=None):
         """Get the target stars
 
         Returns
@@ -521,7 +527,8 @@ class WEPCalculation(object):
         # Connect the database
         sourSelc = self.wepCntlr.getSourSelc()
         bscDbType = self._getBscDbType()
-        if bscDbType in (BscDbType.LocalDb, BscDbType.LocalDbForStarFile):
+        if bscDbType in (BscDbType.LocalDb, BscDbType.LocalDbForStarFile,
+                         BscDbType.LocalDbFromImage):
             dbRelativePath = self.settingFile.getSetting("defaultBscPath")
             dbAdress = os.path.join(getModulePath(), dbRelativePath)
             sourSelc.connect(dbAdress)
@@ -539,6 +546,10 @@ class WEPCalculation(object):
             skyFile = self._assignSkyFile()
             neighborStarMap = sourSelc.getTargetStarByFile(
                 skyFile, offset=camDimOffset)[0]
+        elif (bscDbType == BscDbType.LocalDbFromImage):
+            neighborStarMap = sourSelc.getTargetStarFromImage(
+                self._getButlerRootPath(), visitList, defocalState,
+                offset=camDimOffset)[0]
 
         # Disconnect the database
         sourSelc.disconnect()
@@ -585,9 +596,9 @@ class WEPCalculation(object):
         obsIdList : list[int]
             Observation Id list in [intraObsId, extraObsId]. If the input is
             [intraObsId], this means the corner WFS.
-        
-        postageImg : True/False - whether to save postage stamp images of donuts 
-        postageImgDir : a directory where to save them 
+
+        postageImg : True/False - whether to save postage stamp images of donuts
+        postageImgDir : a directory where to save them
 
         Returns
         -------
@@ -610,7 +621,7 @@ class WEPCalculation(object):
         doDeblending = self.settingFile.getSetting("doDeblending")
         donutMap = self.wepCntlr.getDonutMap(
             neighborStarMap, wfsImgMap, self.getFilter(),
-            doDeblending=doDeblending,postageImg=postageImg, 
+            doDeblending=doDeblending,postageImg=postageImg,
             postageImgDir=postageImgDir)
 
         donutMap = self.wepCntlr.calcWfErr(donutMap,postageImgDir)
