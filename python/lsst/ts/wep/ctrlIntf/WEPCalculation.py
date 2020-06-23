@@ -326,7 +326,8 @@ class WEPCalculation(object):
         return self.rotSkyPos
 
     def calculateWavefrontErrors(self, rawExpData, extraRawExpData=None,postageImg=False,
-                                postageImgDir=None,lowMagnitude=None, highMagnitude=None):
+                                postageImgDir=None,lowMagnitude=None, highMagnitude=None,
+                                sensorNameToIdFileName='sensorNameToId.yaml'):
         """Calculate the wavefront errors.
 
         Parameters
@@ -399,7 +400,7 @@ class WEPCalculation(object):
 
         donutMap = self._calcWfErr(neighborStarMap, obsIdList,postageImg,postageImgDir)
 
-        listOfWfErr = self._populateListOfSensorWavefrontData(donutMap)
+        listOfWfErr = self._populateListOfSensorWavefrontData(donutMap,sensorNameToIdFileName)
 
         return listOfWfErr
 
@@ -570,7 +571,7 @@ class WEPCalculation(object):
         return skyFile
 
     def _calcWfErr(self, neighborStarMap, obsIdList,postageImg=False,
-        postageImgDir=None):
+        postageImgDir=None, ):
         """Calculate the wavefront error.
 
         Only consider one intra-focal and one extra-focal images at this
@@ -616,7 +617,7 @@ class WEPCalculation(object):
 
         return donutMap
 
-    def _populateListOfSensorWavefrontData(self, donutMap):
+    def _populateListOfSensorWavefrontData(self, donutMap,sensorNameToIdFileName='sensorNameToId.yaml'):
         """Populate the list of sensor wavefront data.
 
         Parameters
@@ -631,8 +632,8 @@ class WEPCalculation(object):
         list[SensorWavefrontData]
             List of SensorWavefrontData object.
         """
-
-        mapSensorNameAndId = MapSensorNameAndId()
+        
+        mapSensorNameAndId = MapSensorNameAndId(sensorNameToIdFileName)
         listOfWfErr = []
         for sensor, donutList in donutMap.items():
 
