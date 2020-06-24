@@ -1,0 +1,13 @@
+---
+
+# This file list the sensor abbreviated name and Id using the PhoSim
+# detector IDs for corner wavefront sensors only - 
+# it's a temporary hack! ( 2020 / June / 05 ) 
+R00_S22_C0: 197
+R00_S22_C1: 197
+R04_S20_C0: 204
+R04_S20_C1: 204
+R40_S02_C0: 209
+R40_S02_C1: 209
+R44_S00_C0: 216
+R44_S00_C1: 216
