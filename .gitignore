@@ -8,6 +8,8 @@ config.log
 *.pyc
 *_wrap.cc
 *Lib.py
+*.vscode
+*.ipynb_checkpoints
 
 # Built by sconsUtils
 version.py
@@ -25,3 +27,6 @@ pytest_session.txt
 
 # Mac metadata
 .DS_Store
+
+# One time use templates from image
+policy/deblend/data/isolatedDonutTemplate/*.dat

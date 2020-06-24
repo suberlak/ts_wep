@@ -1,7 +1,7 @@
 import numpy as np
 
 from lsst.ts.wep.cwfs.CentroidRandomWalk import CentroidRandomWalk
-from scipy.ndimage import convolve
+from scipy.signal import convolve, correlate
 from sklearn.cluster import KMeans
 
 
@@ -28,7 +28,7 @@ class CentroidConvolveTemplate(CentroidRandomWalk):
             x, y pixel coordinates for donut centroid
         """
 
-        temp_convolve = convolve(imageBinary, templateImgBinary, mode='constant', cval=0.0)
+        temp_convolve = correlate(imageBinary, templateImgBinary, mode='same', method='fft')
         ranked_convolve = np.argsort(temp_convolve.flatten())[::-1]
         cutoff = len(np.where(temp_convolve.flatten() > 0.95*np.max(temp_convolve))[0])
         ranked_convolve = ranked_convolve[:cutoff]

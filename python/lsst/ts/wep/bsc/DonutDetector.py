@@ -10,7 +10,7 @@ from sklearn.cluster import DBSCAN
 from scipy.spatial.distance import cdist
 from lsst.afw.image import ImageF
 from numpy.fft import fft2, ifft2
-from scipy.signal import fftconvolve, correlate2d
+from scipy.signal import fftconvolve, correlate2d, correlate
 
 
 class DonutDetector():
@@ -93,17 +93,17 @@ class DonutDetector():
         binary_template_image = ImageF(np.shape(self.template)[0],
                                        np.shape(self.template)[1])
         binary_template_image.array[:] = binary_template
-        new_exp = self.convolveExposureWithImage(
+        new_exp = self.correlateExposureWithImage(
             binary_exp, binary_template_image
         )
 
         # Set detection floor at 90% of max signal. Since we are using
         # binary images all signals should be around the same strength
-        ranked_convolve = np.argsort(new_exp.image.array.flatten())[::-1]
+        ranked_correlate = np.argsort(new_exp.image.array.flatten())[::-1]
         cutoff = len(np.where(new_exp.image.array.flatten() >
                               0.9*np.max(new_exp.image.array))[0])
-        ranked_convolve = ranked_convolve[:cutoff]
-        nx, ny = np.unravel_index(ranked_convolve,
+        ranked_correlate = ranked_correlate[:cutoff]
+        nx, ny = np.unravel_index(ranked_correlate,
                                   np.shape(new_exp.image.array))
 
         # Use DBSCAN to find clusters of points
@@ -165,7 +165,7 @@ class DonutDetector():
         template_imageF = ImageF(np.shape(self.template)[0],
                                  np.shape(self.template)[1])
         template_imageF.array[:] = self.template
-        rank_exp = self.convolveExposureWithImage(
+        rank_exp = self.correlateExposureWithImage(
             exposure, template_imageF
         )
 
@@ -249,35 +249,53 @@ class DonutDetector():
 
         return blended_df, blend_system_df
 
-    def convolveExposureWithImage(self, exposure, kernelImage):
-
+    def correlateExposureWithImage(self, exposure, kernelImage):
         '''Convolve image and variance planes in an exposure with an image using FFT
             Does not convolve mask. Returns new exposure'''
 
         newExposure = exposure.clone()
 
-        image = self.convolveImageWithImage(newExposure.getImage(),
-                                            kernelImage)
-        variance = self.convolveImageWithImage(newExposure.getVariance(),
-                                               kernelImage)
+        image = self.correlateImageWithImage(newExposure.getImage(), kernelImage)
+        variance = self.correlateImageWithImage(newExposure.getVariance(), kernelImage)
 
         newExposure.image = image
         newExposure.variance = variance
         return newExposure
 
-    def convolveImageWithImage(self, image, kernelImage, conv=True, fft=True):
+    def convolveExposureWithImage(self, exposure, kernelImage):
+        '''Convolve image and variance planes in an exposure with an image using FFT
+            Does not convolve mask. Returns new exposure'''
 
-        '''Convolve/correlate an image with a kernel
+        newExposure = exposure.clone()
+
+        image = self.convolveImageWithImage(newExposure.getImage(), kernelImage)
+        variance = self.convolveImageWithImage(newExposure.getVariance(), kernelImage)
+
+        newExposure.image = image
+        newExposure.variance = variance
+        return newExposure
+
+    def convolveImageWithImage(self, image, kernelImage):
+        '''Convolvean image with a kernel
+            Returns an image'''
+
+        array = fftconvolve(image.getArray(), kernelImage.getArray(), mode='same')
+
+        newImage = ImageF(array.shape[0], array.shape[1])
+        newImage.array[:] = array
+        return newImage
+
+    def correlateImageWithImage(self, image, kernelImage, fft=False):
+        '''Correlate an image with a kernel
             Option to use an FFT or direct (slow)
             Returns an image'''
-        if conv:
-            array = fftconvolve(image.getArray(), kernelImage.getArray(), mode='same')
+
+        if fft:
+            array = np.roll(ifft2(fft2(kernelImage.getArray()).conj()*fft2(image.getArray())).real,
+                            (image.getArray().shape[0] - 1)//2, axis=(0,1))
         else:
-            if fft:
-                array = np.roll(ifft2(fft2(kernelImage.getArray()).conj()*fft2(image.getArray())).real,
-                            (image.getArray().shape[0] - 1)//2, axis=(0, 1))
-            else:
-                array = correlate2d(image.getArray(), kernelImage.getArray(), mode='same')
+            array = correlate(image.getArray(), kernelImage.getArray(), mode='same', method='fft')
+
         newImage = ImageF(array.shape[1], array.shape[0])
         newImage.array[:] = array
         return newImage

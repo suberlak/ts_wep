@@ -501,6 +501,11 @@ class WepController(object):
                         donutIndex = self._searchDonutListId(
                             donutMap[sensorName], starId)
 
+                        # Only keep for WFS if stamp is square
+                        stampXDim, stampYDim = np.shape(imgDeblend)
+                        if stampXDim != stampYDim:
+                            continue
+
                         # Create the donut object and put into the list if it
                         # is needed
                         if (donutIndex < 0):
