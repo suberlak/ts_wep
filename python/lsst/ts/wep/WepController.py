@@ -341,6 +341,7 @@ class WepController(object):
             dictionary item is the list of donut image (type:
             list[DonutImage]).
         """
+        print('\n Calculating the donut map ')
         if postageImg:
             print('Saving postage stamp images in %s'%postageImgDir)
 
@@ -582,6 +583,7 @@ class WepController(object):
             Donut image map with calculated wavefront error.
         """
 
+        print('\n Calculating the wavefront error based on the donut map')
         # initialize the storage array
         content = "# abbrevDetectorName\t focalPlane\t starId\t xpos\t ypos\n"
 
