@@ -301,9 +301,9 @@ class WepController(object):
         Parameters
         ----------
         sensorNameList : list
-            List of sensor name.
+            List of sensor names, eg. ['R:0,0 S:2,2,A', 'R:0,4 S:2,0,A']
         obsId : int
-            Observation Id.
+            Observation Id (NOT a list)
 
         Returns
         -------
@@ -312,7 +312,34 @@ class WepController(object):
             dictionary item is the defocal image on the camera coordinate.
             (type: DefocalImage).
         """
-        pass
+        
+        # Get the wavefront image map
+        wfsImgMap = dict()
+        for sensorName in sensorNameList:
+
+            # Get the sensor name information
+            raft, sensor = self._getSensorInfo(sensorName)[0:2]
+
+            visit = obsId
+            # Get the exposure image in ndarray
+            if (imageType == ImageType.Amp):
+                exp = self.butlerWrapper.getPostIsrCcd(
+                    int(visit), raft, sensor)
+            elif (imageType == ImageType.Eimg):
+                exp = self.butlerWrapper.getEimage(
+                    int(visit), raft, sensor)
+            else:
+                raise ValueError("The %s is not supported." % imageType)
+
+            img = self.butlerWrapper.getImageData(exp)
+
+            # Transform the image in DM coordinate to camera coordinate.
+            camImg = self._transImgDmCoorToCamCoor(img)
+
+        wfsImgMap[sensorName] = DefocalImage(intraImg=camImg)
+
+        return wfsImgMap
+
 
     def getDonutMap(self, neighborStarMap, wfsImgMap, filterType,
                     doDeblending=False, postageImg=False, postageImgDir=None):
