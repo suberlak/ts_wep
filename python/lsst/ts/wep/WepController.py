@@ -297,6 +297,7 @@ class WepController(object):
 
     def getPostIsrImgMapOnCornerWfs(self, sensorNameList, obsId):
         """Get the post ISR image map of corner wavefront sensors.
+        Note: we assume these to be of imageType == ImageType.Amp
 
         Parameters
         ----------
@@ -316,27 +317,21 @@ class WepController(object):
         # Get the wavefront image map
         wfsImgMap = dict()
         for sensorName in sensorNameList:
-
+            print(sensorName)
             # Get the sensor name information
             raft, sensor = self._getSensorInfo(sensorName)[0:2]
 
-            visit = obsId
             # Get the exposure image in ndarray
-            if (imageType == ImageType.Amp):
-                exp = self.butlerWrapper.getPostIsrCcd(
-                    int(visit), raft, sensor)
-            elif (imageType == ImageType.Eimg):
-                exp = self.butlerWrapper.getEimage(
-                    int(visit), raft, sensor)
-            else:
-                raise ValueError("The %s is not supported." % imageType)
-
+            exp = self.butlerWrapper.getPostIsrCcd(
+                    int(obsId), raft, sensor)
+             
             img = self.butlerWrapper.getImageData(exp)
 
             # Transform the image in DM coordinate to camera coordinate.
             camImg = self._transImgDmCoorToCamCoor(img)
-
-        wfsImgMap[sensorName] = DefocalImage(intraImg=camImg)
+            
+            # store in the dictionary 
+            wfsImgMap[sensorName] = DefocalImage(intraImg=camImg)
 
         return wfsImgMap
 
@@ -402,23 +397,24 @@ class WepController(object):
                 starId, neighStars = nbrStarInfo
                 if len(neighStars) == 0:
                     for ccdImg, imgType in zip(defocalImgList,['intra','extra']):
-                        # Get Template Image
-                        singleTargetImage = self.sourProc.getSingleTargetImage(ccdImg,
-                            nbrStar, starIdIdx, filterType)
-                        templateImage = singleTargetImage[0]
+                    	if ccdImg is not None: # handle the WFS corner case ...
+	                        # Get Template Image
+	                        singleTargetImage = self.sourProc.getSingleTargetImage(ccdImg,
+	                            nbrStar, starIdIdx, filterType)
+	                        templateImage = singleTargetImage[0]
 
-                        # Trim Image
-                        imageSizeX, imageSizeY = np.shape(templateImage)
-                        sizeInPix = self.wfEsti.getSizeInPix()
-                        cutPixX = int((imageSizeX - sizeInPix)/2)
-                        cutPixY = int((imageSizeY - sizeInPix)/2)
-                        templateImage = templateImage[cutPixX:-cutPixX, cutPixY:-cutPixY]
+	                        # Trim Image
+	                        imageSizeX, imageSizeY = np.shape(templateImage)
+	                        sizeInPix = self.wfEsti.getSizeInPix()
+	                        cutPixX = int((imageSizeX - sizeInPix)/2)
+	                        cutPixY = int((imageSizeY - sizeInPix)/2)
+	                        templateImage = templateImage[cutPixX:-cutPixX, cutPixY:-cutPixY]
 
-                        # Save Image
-                        templateFileName = os.path.join(detectorTemplateDir,
-                                                        '%s_template-%s.dat' %
-                                                        (imgType, abbrevName))
-                        np.savetxt(templateFileName, templateImage)
+	                        # Save Image
+	                        templateFileName = os.path.join(detectorTemplateDir,
+	                                                        '%s_template-%s.dat' %
+	                                                        (imgType, abbrevName))
+	                        np.savetxt(templateFileName, templateImage)
                     detectorTemplateExists = True
 
 
