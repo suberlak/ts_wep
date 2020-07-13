@@ -299,6 +299,9 @@ class WepController(object):
         """Get the post ISR image map of corner wavefront sensors.
         Note: we assume these to be of imageType == ImageType.Amp
 
+        Note: whether the image is intra- or extra- focal is determined
+        based on the sensor name. 
+
         Parameters
         ----------
         sensorNameList : list
@@ -314,10 +317,11 @@ class WepController(object):
             (type: DefocalImage).
         """
         
+
         # Get the wavefront image map
         wfsImgMap = dict()
         for sensorName in sensorNameList:
-            print(sensorName)
+           
             # Get the sensor name information
             raft, sensor = self._getSensorInfo(sensorName)[0:2]
 
@@ -330,8 +334,15 @@ class WepController(object):
             # Transform the image in DM coordinate to camera coordinate.
             camImg = self._transImgDmCoorToCamCoor(img)
             
-            # store in the dictionary 
-            wfsImgMap[sensorName] = DefocalImage(intraImg=camImg)
+            # store in the dictionary  as either intra or extr-focal:
+            # determine whether intra- or extra-focal based on name:
+            if sensorName.endswith("A"):
+                print('%s is intra-focal'%sensorName)
+                wfsImgMap[sensorName] = DefocalImage(intraImg=camImg)
+
+            elif sensorName.endswith("B"):
+            	print('%s is extra-focal'%sensorName)
+                wfsImgMap[sensorName] = DefocalImage(extraImg=camImg)
 
         return wfsImgMap
 
