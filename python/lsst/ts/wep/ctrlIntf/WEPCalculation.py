@@ -394,7 +394,6 @@ class WEPCalculation(object):
                                               highMagnitude=highMagnitude)
 
         # Calculate the wavefront error
-
         intraObsId = intraObsIdList[0]
         if (extraRawExpData is None):
             obsIdList = [intraObsId]
@@ -609,19 +608,26 @@ class WEPCalculation(object):
         """
 
         sensorNameList = list(neighborStarMap)
+        
+        if len(obsIdList) == 2 : # ComCam case 
+            print('_calcWfErr has a pair of intra/extra focal obsIds')
+            imgType = self._getImageType()
+            if (imgType == ImageType.Amp):
+                wfsImgMap = self.wepCntlr.getPostIsrImgMapByPistonDefocal(
+                    sensorNameList, obsIdList)
+            elif (imgType == ImageType.Eimg):
+                wfsImgMap = self.wepCntlr.getEimgMapByPistonDefocal(
+                  sensorNameList, obsIdList)
 
-        imgType = self._getImageType()
-        if (imgType == ImageType.Amp):
-            wfsImgMap = self.wepCntlr.getPostIsrImgMapByPistonDefocal(
-                sensorNameList, obsIdList)
-        elif (imgType == ImageType.Eimg):
-            wfsImgMap = self.wepCntlr.getEimgMapByPistonDefocal(
-                sensorNameList, obsIdList)
+        elif len(obsIdList) == 1 : #corner WFS case 
+            print('_calcWfErr has a single intra-focal obsId: the corner WFS case') 
+            wfsImgMap = self.wepCntlr.getPostIsrImgMapOnCornerWfs(
+                  sensorNameList, obsIdList[0])
 
         doDeblending = self.settingFile.getSetting("doDeblending")
         donutMap = self.wepCntlr.getDonutMap(
             neighborStarMap, wfsImgMap, self.getFilter(),
-            doDeblending=doDeblending,postageImg=postageImg,
+            doDeblending=doDeblending, postageImg=postageImg,
             postageImgDir=postageImgDir)
 
         donutMap = self.wepCntlr.calcWfErr(donutMap,postageImgDir)
