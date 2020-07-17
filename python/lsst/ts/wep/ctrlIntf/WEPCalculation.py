@@ -361,7 +361,8 @@ class WEPCalculation(object):
         """
 
         if (extraRawExpData is None):
-            raise ValueError("Corner WFS is not supported yet.")
+            #raise ValueError("Corner WFS is not supported yet.")
+            print('Calculating wavefront error for corner WFS ')
 
         if (len(rawExpData.getVisit()) != 1):
             raise ValueError("Only single visit is allowed at this time.")
