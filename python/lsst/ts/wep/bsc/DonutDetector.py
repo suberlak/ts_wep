@@ -5,7 +5,7 @@ from copy import deepcopy
 from lsst.ts.wep.SourceProcessor import SourceProcessor
 
 from lsst.afw.image import ImageF
-from skimage.filters import threshold_otsu, threshold_triangle
+from skimage.filters import threshold_otsu, threshold_triangle, threshold_local
 from sklearn.cluster import DBSCAN
 from scipy.spatial.distance import cdist
 from lsst.afw.image import ImageF
@@ -55,7 +55,10 @@ class DonutDetector():
         """
 
         binary_exp = deepcopy(exposure)
-        image_thresh = threshold_triangle(exposure.image.array)
+        # image_thresh = threshold_otsu(exposure.image.array)
+        # image_thresh = threshold_triangle(exposure.image.array)
+        # TODO: Set local window size based upon donut size
+        image_thresh = threshold_local(exposure.image.array, 161.)
         binary_exp.image.array[binary_exp.image.array <= image_thresh] = 0.
         binary_exp.image.array[binary_exp.image.array > image_thresh] = 1.
 
@@ -117,7 +120,24 @@ class DonutDetector():
                                        np.mean(nx_cluster)])
         db_cluster_centers = np.array(db_cluster_centers)
 
+        image_donuts_df = pd.DataFrame(db_cluster_centers,
+                                       columns=['x_center', 'y_center'])
+        image_donuts_df = self.labelUnblended(image_donuts_df, blend_radius,
+                                              'x_center', 'y_center')
+
+        return image_donuts_df
+
+    def labelUnblended(self, image_donuts_df, blend_radius,
+                       x_col_name, y_col_name):
+
+        """
+        Label donuts as blended/unblended
+        """
+
         # Find distances between each pair of objects
+        db_cluster_centers = [image_donuts_df[x_col_name].values,
+                              image_donuts_df[y_col_name].values]
+        db_cluster_centers = np.array(db_cluster_centers).T
         dist_matrix = cdist(db_cluster_centers, db_cluster_centers)
         # Don't need repeats of each pair
         dist_matrix_upper = np.triu(dist_matrix)
@@ -127,18 +147,16 @@ class DonutDetector():
             (dist_matrix_upper < blend_radius))).T
         blended_cluster_centers = np.unique(blended_pairs.flatten())
 
-        image_donuts_df = pd.DataFrame(db_cluster_centers,
-                                       columns=['x_center', 'y_center'])
         image_donuts_df['blended'] = False
-        image_donuts_df['blended'].iloc[blended_cluster_centers] = True
+        image_donuts_df.loc[blended_cluster_centers, 'blended'] = True
         image_donuts_df['blended_with'] = None
         for i, j in blended_pairs:
-            if image_donuts_df['blended_with'].iloc[i] is None:
-                image_donuts_df['blended_with'].iloc[i] = []
-            if image_donuts_df['blended_with'].iloc[j] is None:
-                image_donuts_df['blended_with'].iloc[j] = []
-            image_donuts_df['blended_with'].iloc[i].append(j)
-            image_donuts_df['blended_with'].iloc[j].append(i)
+            if image_donuts_df.loc[i, 'blended_with'] is None:
+                image_donuts_df.at[i, 'blended_with'] = []
+            if image_donuts_df.loc[j, 'blended_with'] is None:
+                image_donuts_df.at[j, 'blended_with'] = []
+            image_donuts_df.loc[i, 'blended_with'].append(j)
+            image_donuts_df.loc[j, 'blended_with'].append(i)
 
         return image_donuts_df
 
@@ -169,7 +187,7 @@ class DonutDetector():
             exposure, template_imageF
         )
 
-        unblended_df = donuts_df.query('blended == False')
+        unblended_df = donuts_df.query('blended == False').copy()
 
         unblended_flux = []
         for x_coord, y_coord in zip(unblended_df['x_center'].values,

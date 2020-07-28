@@ -1,3 +1,4 @@
+import os
 import lsst.daf.persistence as dafPersist
 from lsst.ts.wep.bsc.DonutDetector import DonutDetector
 from lsst.ts.wep.bsc.LocalDatabaseForStarFile import LocalDatabaseForStarFile
@@ -17,10 +18,11 @@ class LocalDatabaseFromImage(LocalDatabaseForStarFile):
         centroidTemplateType = settingFileInst.getSetting("centroidTemplateType")
         donutImgSize = settingFileInst.getSetting("donutImgSizeInPixel")
         overlapDistance = settingFileInst.getSetting("minUnblendedDistance")
+        maxSensorStars = settingFileInst.getSetting("maxSensorStars")
         skyDf = self.identifyDonuts(butlerRootPath, visitList, filterType,
                                     defocalState, wavefrontSensors, camera,
                                     centroidTemplateType, donutImgSize,
-                                    overlapDistance)
+                                    overlapDistance, maxSensorStars)
         self.writeSkyFile(skyDf, fileOut)
         self.insertDataByFile(fileOut, filterType, skiprows=1)
 
@@ -28,7 +30,8 @@ class LocalDatabaseFromImage(LocalDatabaseForStarFile):
 
     def identifyDonuts(self, butlerRootPath, visitList, filterType,
                        defocalState, wavefrontSensors, camera,
-                       templateType, donutImgSize, overlapDistance):
+                       templateType, donutImgSize, overlapDistance,
+                       maxSensorStars=None):
 
         butler = dafPersist.Butler(butlerRootPath)
         sensorList = butler.queryMetadata('postISRCCD', 'detectorName')
@@ -61,6 +64,9 @@ class LocalDatabaseFromImage(LocalDatabaseForStarFile):
                                                                    raw)
             ranked_unblended_df = ranked_unblended_df.reset_index(drop=True)
 
+            if maxSensorStars is not None:
+                ranked_unblended_df = ranked_unblended_df.iloc[:maxSensorStars]
+
             # Make coordinate change appropriate to sourProc.dmXY2CamXY
             # FIXME: This is a temporary workaround
             # Transpose because wepcntl. _transImgDmCoorToCamCoor
@@ -79,6 +85,8 @@ class LocalDatabaseFromImage(LocalDatabaseForStarFile):
 
             ranked_unblended_df['ra'] = ra
             ranked_unblended_df['dec'] = dec
+            ranked_unblended_df['raft'] = raft
+            ranked_unblended_df['sensor'] = sensor
 
             if full_unblended_df is None:
                 full_unblended_df = ranked_unblended_df.copy(deep=True)
@@ -90,6 +98,9 @@ class LocalDatabaseFromImage(LocalDatabaseForStarFile):
 
         # FIXME: Actually estimate magnitude
         full_unblended_df['mag'] = 15.
+
+        # TODO: Comment out when not debugging
+        full_unblended_df.to_csv('image_donut_df.csv')
 
         return full_unblended_df
 

@@ -5,6 +5,7 @@ from lsst.ts.wep.bsc.CamFactory import CamFactory
 from lsst.ts.wep.bsc.DatabaseFactory import DatabaseFactory
 from lsst.ts.wep.bsc.LocalDatabaseForStarFile import LocalDatabaseForStarFile
 from lsst.ts.wep.bsc.LocalDatabaseFromImage import LocalDatabaseFromImage
+from lsst.ts.wep.bsc.LocalDatabaseFromRefCat import LocalDatabaseFromRefCat
 from lsst.ts.wep.Utility import mapFilterRefToG, getConfigDir
 from lsst.ts.wep.ParamReader import ParamReader
 
@@ -275,6 +276,29 @@ class SourceSelector(object):
                                     visitList, defocalState,
                                     mappedFilterType, wavefrontSensors,
                                     self.camera, skiprows=1)
+        neighborStarMap, starMap, wavefrontSensors = self.getTargetStar(offset=offset)
+
+        # Delete the table
+        self.db.deleteTable(mappedFilterType)
+
+        return neighborStarMap, starMap, wavefrontSensors
+
+    def getTargetStarFromRefCat(self, butlerRootPath, visitList, defocalState,
+                                offset=0):
+
+        if (not isinstance(self.db, LocalDatabaseFromRefCat)):
+            raise TypeError("The database type is incorrect.")
+
+        filterType = self.getFilter()
+        mappedFilterType = mapFilterRefToG(filterType)
+        wavefrontSensors = self.camera.getWavefrontSensor()
+
+        self.db.createTable(mappedFilterType)
+
+        self.db.insertDataFromRefCat(butlerRootPath, self.settingFile,
+                                     visitList, defocalState,
+                                     mappedFilterType, wavefrontSensors,
+                                     self.camera, skiprows=1)
         neighborStarMap, starMap, wavefrontSensors = self.getTargetStar(offset=offset)
 
         # Delete the table

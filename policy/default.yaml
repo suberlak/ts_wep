@@ -12,7 +12,8 @@ pixelToArcsec: 0.2
 # localDb: Use the local database (not support yet)
 # file: Use the sky file
 # image: Use the image to get donuts
-bscDbType: image
+# refCat: Use the image to fit a DM RefCat
+bscDbType: refCat
 
 # Default BSC database path relative to the root of module
 defaultBscPath: tests/testData/bsc.db3
@@ -85,7 +86,14 @@ deblendTemplateType: isolatedDonutFromImage
 # If using the image to construct donut database
 # This is the minimum distance two donut centers need to be to
 # be tagged as unblended (in pixels)
-minUnblendedDistance: 60
+minUnblendedDistance: 160
+
+# Limit the number of stars used when running with `isolatedDonutFromImage`
+# Can be None or an integer
+maxSensorStars: 5
+
+# Location of reference catalog for WCS generation
+refCatDir: /astro/users/ajc26/epycuser/LSST-Commissioning/aoc/gaia_refcat
 
 # Number of processor for the parallel calculation (should be >=1)
 # This is just a placeholder at this moment
