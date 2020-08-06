@@ -84,6 +84,7 @@ class BscDbType(IntEnum):
     LocalDb = 1
     LocalDbForStarFile = auto()
     LocalDbFromImage = auto()
+    LocalDbFromRefCat = auto()
 
 
 class DefocalType(IntEnum):
@@ -421,6 +422,8 @@ def getBscDbType(bscDbType):
         return BscDbType.LocalDbForStarFile
     elif bscDbType == "image":
         return BscDbType.LocalDbFromImage
+    elif bscDbType == 'refCat':
+        return BscDbType.LocalDbFromRefCat
     else:
         raise ValueError("The bscDb (%s) is not supported." % bscDbType)
 

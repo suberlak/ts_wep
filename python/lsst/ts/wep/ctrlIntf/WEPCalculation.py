@@ -528,7 +528,7 @@ class WEPCalculation(object):
         sourSelc = self.wepCntlr.getSourSelc()
         bscDbType = self._getBscDbType()
         if bscDbType in (BscDbType.LocalDb, BscDbType.LocalDbForStarFile,
-                         BscDbType.LocalDbFromImage):
+                         BscDbType.LocalDbFromImage, BscDbType.LocalDbFromRefCat):
             dbRelativePath = self.settingFile.getSetting("defaultBscPath")
             dbAdress = os.path.join(getModulePath(), dbRelativePath)
             sourSelc.connect(dbAdress)
@@ -548,6 +548,10 @@ class WEPCalculation(object):
                 skyFile, offset=camDimOffset)[0]
         elif (bscDbType == BscDbType.LocalDbFromImage):
             neighborStarMap = sourSelc.getTargetStarFromImage(
+                self._getButlerRootPath(), visitList, defocalState,
+                offset=camDimOffset)[0]
+        elif (bscDbType == BscDbType.LocalDbFromRefCat):
+            neighborStarMap = sourSelc.getTargetStarFromRefCat(
                 self._getButlerRootPath(), visitList, defocalState,
                 offset=camDimOffset)[0]
 
@@ -650,7 +654,7 @@ class WEPCalculation(object):
         list[SensorWavefrontData]
             List of SensorWavefrontData object.
         """
-        
+
         mapSensorNameAndId = MapSensorNameAndId(sensorNameToIdFileName)
         listOfWfErr = []
         for sensor, donutList in donutMap.items():

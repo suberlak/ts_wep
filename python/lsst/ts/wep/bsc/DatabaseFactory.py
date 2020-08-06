@@ -1,6 +1,7 @@
 from lsst.ts.wep.bsc.LocalDatabase import LocalDatabase
 from lsst.ts.wep.bsc.LocalDatabaseForStarFile import LocalDatabaseForStarFile
 from lsst.ts.wep.bsc.LocalDatabaseFromImage import LocalDatabaseFromImage
+from lsst.ts.wep.bsc.LocalDatabaseFromRefCat import LocalDatabaseFromRefCat
 
 from lsst.ts.wep.Utility import BscDbType
 
@@ -33,6 +34,8 @@ class DatabaseFactory(object):
             return LocalDatabaseForStarFile()
         elif (bscDbType == BscDbType.LocalDbFromImage):
             return LocalDatabaseFromImage()
+        elif (bscDbType == BscDbType.LocalDbFromRefCat):
+            return LocalDatabaseFromRefCat()
         else:
             raise ValueError("The database type does not match.")
 
