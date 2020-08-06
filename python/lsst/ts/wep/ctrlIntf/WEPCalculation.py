@@ -477,7 +477,7 @@ class WEPCalculation(object):
         """
 
         isrWrapper = self.wepCntlr.getIsrWrapper()
-        isrWrapper.config(doFlat=True, fileName=isrConfigfileName)
+        isrWrapper.config(doFlat=True, doOverscan=True, fileName=isrConfigfileName)
 
         rerunName = self._getIsrRerunName()
         isrWrapper.doISR(self.isrDir, rerunName=rerunName)
