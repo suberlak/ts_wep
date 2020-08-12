@@ -467,7 +467,7 @@ class WEPCalculation(object):
 
         return getImageType(imgType)
 
-    def _doIsr(self, isrConfigfileName):
+    def _doIsr(self, isrConfigfileName, rerunName=None):
         """Do the instrument signature removal (ISR).
 
         Parameters
@@ -478,8 +478,8 @@ class WEPCalculation(object):
 
         isrWrapper = self.wepCntlr.getIsrWrapper()
         isrWrapper.config(doFlat=True, doOverscan=True, fileName=isrConfigfileName)
-
-        rerunName = self._getIsrRerunName()
+        if rerunName is None:
+            rerunName = self._getIsrRerunName()
         isrWrapper.doISR(self.isrDir, rerunName=rerunName)
 
     def _getIsrRerunName(self):
